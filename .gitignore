@@ -1,0 +1,25 @@
+# Root Binaries
+/perfforge
+/vuelitycs
+/vuelitycs-agent
+
+# Databases
+*.db
+*.sqlite
+
+# IDEs and OS
+.idea/
+.vscode/
+.DS_Store
+*.swp
+
+# Local Go
+.go/
+go/
+bin/
+
+# Temporary and logs
+*.log
+tmp/
+dist/
+build/

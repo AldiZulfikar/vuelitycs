@@ -1,0 +1,16 @@
+{
+  "name": "PerfForge HTTP Gateway Load Test",
+  "protocol": "HTTP",
+  "vus": 8,
+  "duration_seconds": 15,
+  "ramp_up_seconds": 3,
+  "pacing_ms": 100,
+  "config": {
+    "url": "https://httpbin.org/get",
+    "method": "GET",
+    "headers": {
+      "User-Agent": "PerfForge-Engine/1.0",
+      "X-Custom-Header": "Enterprise-Benchmark"
+    }
+  }
+}

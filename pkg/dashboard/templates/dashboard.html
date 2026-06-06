@@ -1,0 +1,838 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Vuelitycs Performance Engineering Platform</title>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&family=JetBrains+Mono:wght@400;500;700&display=swap" rel="stylesheet">
+    <!-- Chart.js CDN for elegant dynamic graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    <link rel="stylesheet" href="/static/style.css">
+    <style>
+        /* Extra custom styles for Revision 2.0 overview grid */
+        .overview-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1rem;
+            margin-bottom: 1.5rem;
+        }
+        .overview-item {
+            background: rgba(255, 255, 255, 0.03);
+            border: 1px solid var(--border-glass);
+            border-radius: 12px;
+            padding: 0.8rem 1rem;
+            display: flex;
+            flex-direction: column;
+        }
+        .overview-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            margin-bottom: 0.2rem;
+        }
+        .overview-value {
+            font-size: 1.1rem;
+            font-weight: 700;
+            color: var(--text-main);
+        }
+        .capacity-counters {
+            display: grid;
+            grid-template-columns: repeat(4, 1fr);
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .throughput-counters {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .telemetry-counters {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .charts-grid {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 1.25rem;
+            margin-bottom: 1.5rem;
+        }
+        .comparison-selectors {
+            display: flex;
+            gap: 1rem;
+            align-items: flex-end;
+            margin-bottom: 2rem;
+            background: rgba(255, 255, 255, 0.02);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-glass);
+        }
+        .wizard-step {
+            background: rgba(255, 255, 255, 0.02);
+            padding: 1.5rem;
+            border-radius: 12px;
+            border: 1px solid var(--border-glass);
+            margin-bottom: 1.5rem;
+        }
+        .wizard-btn-group {
+            display: flex;
+            gap: 0.75rem;
+            flex-wrap: wrap;
+        }
+        .wizard-btn {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-glass);
+            color: var(--text-muted);
+            padding: 0.75rem 1.25rem;
+            border-radius: 8px;
+            cursor: pointer;
+            font-family: 'Outfit', sans-serif;
+            font-weight: 500;
+            transition: all 0.2s ease;
+        }
+        .wizard-btn.active {
+            background: var(--bg-purple-grad);
+            border-color: transparent;
+            color: var(--text-main);
+            box-shadow: 0 4px 15px rgba(139, 92, 246, 0.3);
+        }
+        .wizard-btn:hover:not(.active) {
+            background: rgba(255, 255, 255, 0.1);
+            color: var(--text-main);
+        }
+        .wizard-input-field {
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid var(--border-glass);
+            border-radius: 8px;
+            color: var(--text-main);
+            padding: 0.75rem;
+            font-family: 'JetBrains Mono', monospace;
+            width: 100%;
+            transition: border-color 0.2s ease;
+        }
+        .wizard-input-field:focus {
+            outline: none;
+            border-color: var(--color-purple);
+        }
+        .border-success {
+            border-color: var(--color-success) !important;
+        }
+        .border-warning {
+            border-color: var(--color-warning) !important;
+        }
+        .border-critical {
+            border-color: var(--color-error) !important;
+        }
+    </style>
+</head>
+<body>
+    <!-- Abstract Ambient Gradients -->
+    <div class="ambient-glow glow-1"></div>
+    <div class="ambient-glow glow-2"></div>
+    <div class="ambient-glow glow-3"></div>
+
+    <div class="app-container">
+        <!-- Sidebar Navigation -->
+        <aside class="sidebar">
+            <div class="logo-area">
+                <svg class="logo-icon" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                    <path d="M13 2L3 14H12L11 22L21 10H12L13 2Z" stroke="url(#logo-grad)" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"/>
+                    <defs>
+                        <linearGradient id="logo-grad" x1="3" y1="2" x2="21" y2="22" gradientUnits="userSpaceOnUse">
+                            <stop stop-color="#8B5CF6"/>
+                            <stop offset="1" stop-color="#EC4899"/>
+                        </linearGradient>
+                    </defs>
+                </svg>
+                <span class="logo-text">VUELI<span class="highlight">TYCS</span></span>
+            </div>
+            <nav class="nav-links">
+                <a href="#" class="nav-item active" id="btn-nav-dashboard">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M4 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2V6zM14 6a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2V6zM4 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2H6a2 2 0 01-2-2v-4zM14 16a2 2 0 012-2h2a2 2 0 012 2v4a2 2 0 01-2 2h-2a2 2 0 01-2-2v-4z"></path></svg>
+                    Dashboard
+                </a>
+                <a href="#" class="nav-item" id="btn-nav-history">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                    History
+                </a>
+                <a href="#" class="nav-item" id="btn-nav-comparison">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                    Comparison
+                </a>
+                <a href="#" class="nav-item" id="btn-nav-wizard">
+                    <svg class="nav-icon" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 6V4m0 2a2 2 0 100 4m0-4a2 2 0 110 4m-6 8a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4m6 6v10m6-2a2 2 0 100-4m0 4a2 2 0 110-4m0 4v2m0-6V4"></path></svg>
+                    Scenario Wizard
+                </a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="system-status">
+                    <div class="status-indicator online"></div>
+                    <div class="status-details">
+                        <p class="status-title">Platform Node</p>
+                        <p class="status-subtitle" id="lbl-engine-status">Vuelitycs (Ready)</p>
+                    </div>
+                </div>
+            </div>
+        </aside>
+
+        <!-- Main Body -->
+        <main class="main-content">
+            <!-- Top Header -->
+            <header class="top-header">
+                <div class="header-title-area">
+                    <h1 id="lbl-page-title">Performance Engineering Platform</h1>
+                    <p class="header-subtitle" id="lbl-page-subtitle">Vuelitycs high-precision telemetry & bottleneck analysis</p>
+                </div>
+                <div class="header-controls" id="header-preset-controls">
+                    <button class="btn btn-secondary" id="btn-preset-http">Load HTTP Scenario</button>
+                    <button class="btn btn-secondary" id="btn-preset-browser">Load Browser Scenario</button>
+                </div>
+            </header>
+
+            <!-- Primary Dashboard Panel -->
+            <div class="dashboard-grid" id="panel-dashboard">
+                
+                <!-- Left Configuration Column -->
+                <section class="grid-col-config">
+                    <div class="card glass-card config-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Scenario Specification</h2>
+                            <span class="badge badge-purple">DSL Spec</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="code-editor-wrapper">
+                                <textarea id="txt-scenario-dsl" spellcheck="false" class="code-editor">
+{
+  "name": "HTTP Core Load Run",
+  "protocol": "HTTP",
+  "vus": 15,
+  "duration_seconds": 20,
+  "ramp_up_seconds": 4,
+  "pacing_ms": 150,
+  "test_type": "LOAD",
+  "config": {
+    "url": "https://httpbin.org/get",
+    "method": "GET",
+    "headers": {
+      "User-Agent": "Vuelitycs-Platform/2.0"
+    }
+  }
+}</textarea>
+                            </div>
+                            <div class="editor-actions">
+                                <button class="btn btn-primary btn-full" id="btn-start-test">
+                                    <svg class="btn-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                                    Deploy & Start Test
+                                </button>
+                                <button class="btn btn-danger btn-full hide" id="btn-stop-test">
+                                    <svg class="btn-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                                    Abort Execution
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                </section>
+
+                <!-- Right Execution & Telemetry Column -->
+                <section class="grid-col-telemetry">
+                    
+                    <!-- Live Overview Section -->
+                    <div class="card glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Scenario Live Overview</h2>
+                            <span class="badge badge-purple" id="lbl-overview-protocol">HTTP</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="overview-grid">
+                                <div class="overview-item">
+                                    <span class="overview-label">Scenario Name</span>
+                                    <span class="overview-value" id="lbl-overview-name">HTTP Core Load Run</span>
+                                </div>
+                                <div class="overview-item">
+                                    <span class="overview-label">Scenario Type</span>
+                                    <span class="overview-value" id="lbl-overview-type">LOAD</span>
+                                </div>
+                                <div class="overview-item">
+                                    <span class="overview-label">Current Stage</span>
+                                    <span class="overview-value" id="lbl-overview-stage">INIT</span>
+                                </div>
+                                <div class="overview-item">
+                                    <span class="overview-label">Duration</span>
+                                    <span class="overview-value" id="lbl-overview-duration">0s</span>
+                                </div>
+                                <div class="overview-item">
+                                    <span class="overview-label">Current VU</span>
+                                    <span class="overview-value" id="lbl-overview-cur-vus">0</span>
+                                </div>
+                                <div class="overview-item">
+                                    <span class="overview-label">Target VU</span>
+                                    <span class="overview-value" id="lbl-overview-tar-vus">0</span>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Throughput Widget -->
+                    <div class="throughput-counters">
+                        <div class="card glass-card counter-card">
+                            <div class="counter-icon bg-blue">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            </div>
+                            <div class="counter-content">
+                                <p class="counter-label">Current RPS</p>
+                                <h3 class="counter-value" id="lbl-counter-rps">0.0</h3>
+                            </div>
+                        </div>
+                        <div class="card glass-card counter-card">
+                            <div class="counter-icon bg-purple">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"></path></svg>
+                            </div>
+                            <div class="counter-content">
+                                <p class="counter-label">Average RPS</p>
+                                <h3 class="counter-value" id="lbl-counter-avg-rps">0.0</h3>
+                            </div>
+                        </div>
+                        <div class="card glass-card counter-card">
+                            <div class="counter-icon bg-green">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 7h8m0 0v8m0-8l-8 8-4-4-6 6"></path></svg>
+                            </div>
+                            <div class="counter-content">
+                                <p class="counter-label">Peak RPS</p>
+                                <h3 class="counter-value" id="lbl-counter-peak-rps">0.0</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Capacity Widget -->
+                    <div class="capacity-counters">
+                        <div class="card glass-card counter-card">
+                            <div class="counter-icon bg-blue">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            <div class="counter-content">
+                                <p class="counter-label">Safe Capacity</p>
+                                <h3 class="counter-value" id="lbl-capacity-safe">0 VU</h3>
+                            </div>
+                        </div>
+                        <div class="card glass-card counter-card">
+                            <div class="counter-icon bg-purple">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"></path></svg>
+                            </div>
+                            <div class="counter-content">
+                                <p class="counter-label">Inflection Point</p>
+                                <h3 class="counter-value" id="lbl-capacity-inflection">0 VU</h3>
+                            </div>
+                        </div>
+                        <div class="card glass-card counter-card">
+                            <div class="counter-icon bg-red">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            </div>
+                            <div class="counter-content">
+                                <p class="counter-label">Critical Capacity</p>
+                                <h3 class="counter-value" id="lbl-capacity-critical">0 VU</h3>
+                            </div>
+                        </div>
+                        <div class="card glass-card counter-card">
+                            <div class="counter-icon bg-green">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 3.055A9.001 9.001 0 1020.945 13H11V3.055z"></path><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.488 9H15V3.512A9.025 9.025 0 0120.488 9z"></path></svg>
+                            </div>
+                            <div class="counter-content">
+                                <p class="counter-label">Saturation Index</p>
+                                <h3 class="counter-value" id="lbl-capacity-saturation">0%</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Totals & Errors Widget -->
+                    <div class="telemetry-counters">
+                        <div class="card glass-card counter-card">
+                            <div class="counter-icon bg-green">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"></path></svg>
+                            </div>
+                            <div class="counter-content">
+                                <p class="counter-label">Successful Requests</p>
+                                <h3 class="counter-value" id="lbl-counter-success">0</h3>
+                            </div>
+                        </div>
+                        <div class="card glass-card counter-card">
+                            <div class="counter-icon bg-red">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            </div>
+                            <div class="counter-content">
+                                <p class="counter-label">Failed Requests</p>
+                                <h3 class="counter-value" id="lbl-counter-failed">0</h3>
+                            </div>
+                        </div>
+                        <div class="card glass-card counter-card" id="card-error-rate">
+                            <div class="counter-icon bg-green" id="icon-error-rate">
+                                <svg fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z"></path></svg>
+                            </div>
+                            <div class="counter-content">
+                                <p class="counter-label">Error Rate</p>
+                                <h3 class="counter-value" id="lbl-counter-error-rate">0.00%</h3>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Live Graphical Observability Grid -->
+                    <div class="charts-grid">
+                        <!-- Latency Chart -->
+                        <div class="card glass-card chart-card">
+                            <div class="card-header">
+                                <h2 class="card-title">Live Latency (Corrected vs Raw)</h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="position: relative; height: 180px;">
+                                    <canvas id="chart-live-latency"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Throughput Chart -->
+                        <div class="card glass-card chart-card">
+                            <div class="card-header">
+                                <h2 class="card-title">Throughput Timeline (RPS vs Time)</h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="position: relative; height: 180px;">
+                                    <canvas id="chart-live-throughput"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Capacity Timeline Chart -->
+                        <div class="card glass-card chart-card" style="grid-column: span 2;">
+                            <div class="card-header">
+                                <h2 class="card-title">Capacity Timeline (VU vs Latency & Errors)</h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="position: relative; height: 220px;">
+                                    <canvas id="chart-live-capacity"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Browser Core Web Vitals Panel -->
+                    <div class="card glass-card browser-vitals-card hide" id="card-browser-vitals">
+                        <div class="card-header">
+                            <h2 class="card-title">Browser Core Web Vitals</h2>
+                            <span class="badge badge-green">Chrome CDP</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="vitals-grid">
+                                <div class="vital-item">
+                                    <div class="vital-header">
+                                        <span class="vital-name">First Contentful Paint (FCP)</span>
+                                        <span class="vital-value" id="lbl-vital-fcp">0.00s</span>
+                                    </div>
+                                    <div class="vital-bar-track">
+                                        <div class="vital-bar bg-purple" id="bar-vital-fcp" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div class="vital-item">
+                                    <div class="vital-header">
+                                        <span class="vital-name">Largest Contentful Paint (LCP)</span>
+                                        <span class="vital-value" id="lbl-vital-lcp">0.00s</span>
+                                    </div>
+                                    <div class="vital-bar-track">
+                                        <div class="vital-bar bg-green" id="bar-vital-lcp" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div class="vital-item">
+                                    <div class="vital-header">
+                                        <span class="vital-name">Time to Interactive (TTI)</span>
+                                        <span class="vital-value" id="lbl-vital-tti">0.00s</span>
+                                    </div>
+                                    <div class="vital-bar-track">
+                                        <div class="vital-bar bg-blue" id="bar-vital-tti" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                                <div class="vital-item">
+                                    <div class="vital-header">
+                                        <span class="vital-name">Resource Load Timing</span>
+                                        <span class="vital-value" id="lbl-vital-resource">0.00s</span>
+                                    </div>
+                                    <div class="vital-bar-track">
+                                        <div class="vital-bar bg-amber" id="bar-vital-resource" style="width: 0%"></div>
+                                    </div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <!-- Percentile Latency Tables -->
+                    <div class="card glass-card metrics-table-card">
+                        <div class="card-header">
+                            <h2 class="card-title">HDR Latency Percentiles (Canonical Microseconds µs)</h2>
+                            <span class="badge badge-purple" style="font-size: 0.7rem;">ADR-008</span>
+                        </div>
+                        <div class="card-body no-padding">
+                            <table class="metrics-table">
+                                <thead>
+                                    <tr>
+                                        <th>Metric Mode</th>
+                                        <th>Min</th>
+                                        <th>P50</th>
+                                        <th>P90</th>
+                                        <th>P95</th>
+                                        <th>P99</th>
+                                        <th>P99.9</th>
+                                        <th>P99.99</th>
+                                        <th>Max</th>
+                                        <th>Mean</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                                    <tr id="row-hdr-metrics-corrected">
+                                        <td><strong>Corrected (CO)</strong></td>
+                                        <td id="lbl-tbl-min">0µs</td>
+                                        <td id="lbl-tbl-p50">0µs</td>
+                                        <td id="lbl-tbl-p90">0µs</td>
+                                        <td id="lbl-tbl-p95">0µs</td>
+                                        <td id="lbl-tbl-p99">0µs</td>
+                                        <td id="lbl-tbl-p999">0µs</td>
+                                        <td id="lbl-tbl-p9999">0µs</td>
+                                        <td id="lbl-tbl-max">0µs</td>
+                                        <td id="lbl-tbl-mean">0µs</td>
+                                    </tr>
+                                    <tr id="row-hdr-metrics-raw" style="opacity: 0.65; background: rgba(255,255,255,0.01)">
+                                        <td><strong>Raw Latency</strong></td>
+                                        <td id="lbl-tbl-raw-min">0µs</td>
+                                        <td id="lbl-tbl-raw-p50">0µs</td>
+                                        <td id="lbl-tbl-raw-p90">0µs</td>
+                                        <td id="lbl-tbl-raw-p95">0µs</td>
+                                        <td id="lbl-tbl-raw-p99">0µs</td>
+                                        <td id="lbl-tbl-raw-p999">0µs</td>
+                                        <td id="lbl-tbl-raw-p9999">0µs</td>
+                                        <td id="lbl-tbl-raw-max">0µs</td>
+                                        <td id="lbl-tbl-raw-mean">0µs</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+
+                    <!-- Live Event Console -->
+                    <div class="card glass-card terminal-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Live Event Console</h2>
+                            <button class="btn btn-tiny" id="btn-clear-terminal">Clear</button>
+                        </div>
+                        <div class="card-body">
+                            <div class="terminal-screen" id="terminal-screen">
+                                <div class="terminal-line system-msg">Vuelitycs event stream listener ready. Deploy a scenario to stream telemetry...</div>
+                            </div>
+                        </div>
+                    </div>
+
+                </section>
+            </div>
+
+            <!-- History Panel -->
+            <div class="history-container hide" id="panel-history">
+                <div class="card glass-card full-card">
+                    <div class="card-header">
+                        <h2 class="card-title">Vuelitycs Execution Run History (SQLite Persistence)</h2>
+                    </div>
+                    <div class="card-body">
+                        <div class="history-table-wrapper">
+                            <table class="metrics-table">
+                                <thead>
+                                    <tr>
+                                        <th>Run ID</th>
+                                        <th>Scenario ID</th>
+                                        <th>Scenario Name</th>
+                                        <th>Test Type</th>
+                                        <th>P95 Latency</th>
+                                        <th>P99 Latency</th>
+                                        <th>Peak RPS</th>
+                                        <th>Error Rate</th>
+                                        <th>Duration</th>
+                                        <th>Status</th>
+                                        <th>Safe VU</th>
+                                        <th>Critical VU</th>
+                                        <th>Inflection</th>
+                                        <th>Saturation</th>
+                                        <th>Timestamp</th>
+                                    </tr>
+                                </thead>
+                                <tbody id="history-table-body">
+                                    <tr>
+                                        <td colspan="14" class="text-center">No runs recorded in SQLite. Deploy a scenario to begin.</td>
+                                    </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Comparison Panel -->
+            <div class="history-container hide" id="panel-comparison">
+                <div class="card glass-card full-card">
+                    <div class="card-header">
+                        <h2 class="card-title">Run Comparison & Regression Analysis</h2>
+                        <span class="badge badge-purple">Sprint 2</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="comparison-selectors">
+                            <div style="flex: 1;">
+                                <label style="display: block; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem;">Select Run A (Baseline)</label>
+                                <select id="select-run-a" class="wizard-input-field"></select>
+                            </div>
+                            <div style="flex: 1;">
+                                <label style="display: block; font-size: 0.75rem; text-transform: uppercase; color: var(--text-muted); margin-bottom: 0.5rem;">Select Run B (Target)</label>
+                                <select id="select-run-b" class="wizard-input-field"></select>
+                            </div>
+                            <button class="btn btn-primary" id="btn-run-comparison" style="height: 48px; padding: 0 2rem;">Compare Runs</button>
+                        </div>
+                        
+                        <div id="comparison-results-view" class="hide">
+                            <div class="capacity-counters">
+                                <div class="card glass-card counter-card" id="card-comp-p95">
+                                    <div class="counter-content">
+                                        <p class="counter-label">P95 Latency Delta</p>
+                                        <h3 class="counter-value" id="comp-val-p95">0µs</h3>
+                                    </div>
+                                </div>
+                                <div class="card glass-card counter-card" id="card-comp-p99">
+                                    <div class="counter-content">
+                                        <p class="counter-label">P99 Latency Delta</p>
+                                        <h3 class="counter-value" id="comp-val-p99">0µs</h3>
+                                    </div>
+                                </div>
+                                <div class="card glass-card counter-card" id="card-comp-rps">
+                                    <div class="counter-content">
+                                        <p class="counter-label">Peak RPS Delta</p>
+                                        <h3 class="counter-value" id="comp-val-rps">0.0</h3>
+                                    </div>
+                                </div>
+                                <div class="card glass-card counter-card" id="card-comp-errors">
+                                    <div class="counter-content">
+                                        <p class="counter-label">Error Rate Delta</p>
+                                        <h3 class="counter-value" id="comp-val-errors">0%</h3>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="capacity-counters" style="margin-bottom: 2rem;">
+                                <div class="card glass-card counter-card" style="grid-column: span 2;" id="card-comp-safe">
+                                    <div class="counter-content">
+                                        <p class="counter-label">Safe Capacity Delta</p>
+                                        <h3 class="counter-value" id="comp-val-safe">0 VU</h3>
+                                    </div>
+                                </div>
+                                <div class="card glass-card counter-card" style="grid-column: span 2;" id="card-comp-critical">
+                                    <div class="counter-content">
+                                        <p class="counter-label">Critical Capacity Delta</p>
+                                        <h3 class="counter-value" id="comp-val-critical">0 VU</h3>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div class="card glass-card">
+                                <div class="card-header">
+                                    <h2 class="card-title">Side-by-Side Analysis</h2>
+                                </div>
+                                <div class="card-body no-padding">
+                                    <table class="metrics-table">
+                                        <thead>
+                                            <tr>
+                                                <th>Metric</th>
+                                                <th>Run A (Baseline)</th>
+                                                <th>Run B (Target)</th>
+                                                <th>Delta</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            <tr>
+                                                <td><strong>P95 Latency</strong></td>
+                                                <td id="comp-tbl-a-p95">-</td>
+                                                <td id="comp-tbl-b-p95">-</td>
+                                                <td id="comp-tbl-d-p95">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>P99 Latency</strong></td>
+                                                <td id="comp-tbl-a-p99">-</td>
+                                                <td id="comp-tbl-b-p99">-</td>
+                                                <td id="comp-tbl-d-p99">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>P99.9 Latency</strong></td>
+                                                <td id="comp-tbl-a-p999">-</td>
+                                                <td id="comp-tbl-b-p999">-</td>
+                                                <td id="comp-tbl-d-p999">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Peak Throughput (RPS)</strong></td>
+                                                <td id="comp-tbl-a-rps">-</td>
+                                                <td id="comp-tbl-b-rps">-</td>
+                                                <td id="comp-tbl-d-rps">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Error Rate</strong></td>
+                                                <td id="comp-tbl-a-errors">-</td>
+                                                <td id="comp-tbl-b-errors">-</td>
+                                                <td id="comp-tbl-d-errors">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Safe VU Capacity</strong></td>
+                                                <td id="comp-tbl-a-safe">-</td>
+                                                <td id="comp-tbl-b-safe">-</td>
+                                                <td id="comp-tbl-d-safe">-</td>
+                                            </tr>
+                                            <tr>
+                                                <td><strong>Critical VU Capacity</strong></td>
+                                                <td id="comp-tbl-a-critical">-</td>
+                                                <td id="comp-tbl-b-critical">-</td>
+                                                <td id="comp-tbl-d-critical">-</td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Scenario Wizard Panel -->
+            <div class="history-container hide" id="panel-wizard">
+                <div class="card glass-card full-card">
+                    <div class="card-header">
+                        <h2 class="card-title">Scenario Wizard Builder</h2>
+                        <span class="badge badge-purple">Generate DSL</span>
+                    </div>
+                    <div class="card-body">
+                        <div class="wizard-steps">
+                            <!-- Step 1 -->
+                            <div class="wizard-step">
+                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 1: Protocol Selection</h3>
+                                <div class="wizard-btn-group" id="group-wiz-protocol">
+                                    <button class="wizard-btn active" data-protocol="HTTP">HTTP Protocol</button>
+                                    <button class="wizard-btn" data-protocol="Browser">Browser Vitals (CDP)</button>
+                                    <button class="wizard-btn" data-protocol="Kafka">Kafka Broker</button>
+                                    <button class="wizard-btn" data-protocol="Database">Database Query</button>
+                                </div>
+                            </div>
+
+                            <!-- Step 2 -->
+                            <div class="wizard-step">
+                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 2: Test Profile</h3>
+                                <div class="wizard-btn-group" id="group-wiz-type">
+                                    <button class="wizard-btn active" data-type="LOAD">Load Test</button>
+                                    <button class="wizard-btn" data-type="STRESS">Stress Test</button>
+                                    <button class="wizard-btn" data-type="SPIKE">Spike Test</button>
+                                    <button class="wizard-btn" data-type="SOAK">Soak Test</button>
+                                    <button class="wizard-btn" data-type="VOLUME">Volume Test</button>
+                                    <button class="wizard-btn" data-type="SCALABILITY">Scalability Test</button>
+                                </div>
+                            </div>
+
+                            <!-- Step 3 -->
+                            <div class="wizard-step">
+                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 3: Workload Parameters</h3>
+                                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Target VUs</label>
+                                        <input type="number" id="wiz-vus" class="wizard-input-field" value="10">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Duration (sec)</label>
+                                        <input type="number" id="wiz-duration" class="wizard-input-field" value="15">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Ramp Up (sec)</label>
+                                        <input type="number" id="wiz-ramp-up" class="wizard-input-field" value="3">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Pacing (ms)</label>
+                                        <input type="number" id="wiz-pacing" class="wizard-input-field" value="100">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Protocol Config -->
+                            <div class="wizard-step" id="wiz-proto-config">
+                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 4: Protocol Details</h3>
+                                
+                                <!-- HTTP Options -->
+                                <div id="wiz-opt-http" class="wiz-proto-opt">
+                                    <div style="display: grid; grid-template-columns: 1fr 3fr; gap: 1rem;">
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Method</label>
+                                            <select id="wiz-http-method" class="wizard-input-field" style="background: rgba(0,0,0,0.2);">
+                                                <option value="GET">GET</option>
+                                                <option value="POST">POST</option>
+                                                <option value="PUT">PUT</option>
+                                                <option value="DELETE">DELETE</option>
+                                            </select>
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Target URL</label>
+                                            <input type="text" id="wiz-http-url" class="wizard-input-field" value="https://httpbin.org/get">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Browser Options -->
+                                <div id="wiz-opt-browser" class="wiz-proto-opt hide">
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Browser Target URL</label>
+                                        <input type="text" id="wiz-browser-url" class="wizard-input-field" value="https://example.com">
+                                    </div>
+                                </div>
+
+                                <!-- Kafka Options -->
+                                <div id="wiz-opt-kafka" class="wiz-proto-opt hide">
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Kafka Brokers</label>
+                                            <input type="text" id="wiz-kafka-brokers" class="wizard-input-field" value="localhost:9092">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Topic</label>
+                                            <input type="text" id="wiz-kafka-topic" class="wizard-input-field" value="vuelitycs-events">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Database Options -->
+                                <div id="wiz-opt-database" class="wiz-proto-opt hide">
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 1rem;">
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Driver</label>
+                                            <input type="text" id="wiz-db-driver" class="wizard-input-field" value="sqlite">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">DSN / Connection String</label>
+                                            <input type="text" id="wiz-db-dsn" class="wizard-input-field" value="vuelitycs.db">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">SQL Query</label>
+                                            <input type="text" id="wiz-db-query" class="wizard-input-field" value="SELECT 1">
+                                        </div>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <div style="margin-top: 2rem;">
+                                <button class="btn btn-primary" id="btn-wizard-generate" style="padding: 0.8rem 2rem;">Generate & Load Scenario</button>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </main>
+    </div>
+
+    <!-- JS Scripts -->
+    <script src="/static/app.js"></script>
+</body>
+</html>
