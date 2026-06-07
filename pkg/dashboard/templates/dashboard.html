@@ -221,6 +221,15 @@
   }
 }</textarea>
                             </div>
+                            
+                            <!-- Epic 6: Scenario Management -->
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; margin-top: 0.5rem;">
+                                <select id="select-saved-scenarios" class="wizard-input-field" style="flex: 1; padding: 0.4rem; font-size: 0.8rem; background: rgba(255,255,255,0.05);"></select>
+                                <button class="btn btn-secondary" id="btn-scen-load" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">Load</button>
+                                <button class="btn btn-secondary" id="btn-scen-save" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">Save</button>
+                                <button class="btn btn-secondary" id="btn-scen-duplicate" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;" title="Duplicate Scenario">Copy</button>
+                            </div>
+
                             <div class="editor-actions">
                                 <button class="btn btn-primary btn-full" id="btn-start-test">
                                     <svg class="btn-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
@@ -424,6 +433,29 @@
                         </div>
                     </div>
 
+                    <!-- Epic 10: Capacity Heatmap Visualization -->
+                    <div class="card glass-card" id="card-heatmap">
+                        <div class="card-header">
+                            <h2 class="card-title">Capacity Saturation Heatmap</h2>
+                            <span class="badge badge-purple">Real-Time</span>
+                        </div>
+                        <div class="card-body">
+                            <div style="position: relative; height: 36px; border-radius: 6px; background: linear-gradient(to right, rgba(16,185,129,0.2) 0%, rgba(16,185,129,0.8) 40%, rgba(245,158,11,0.8) 70%, rgba(239,68,68,0.9) 90%, rgba(239,68,68,1) 100%); display: flex; align-items: center; justify-content: space-between; padding: 0 15px; color: rgba(255,255,255,0.8); font-size: 0.75rem; font-weight: 600; font-family: 'JetBrains Mono', monospace;">
+                                <span style="z-index: 2;">SAFE (0-50%)</span>
+                                <span style="z-index: 2;">WARNING (51-80%)</span>
+                                <span style="z-index: 2;">CRITICAL (81%+)</span>
+                                
+                                <!-- Heatmap Marker -->
+                                <div id="heatmap-pointer" style="position: absolute; top: 0; left: 0%; width: 4px; height: 100%; background: #ffffff; box-shadow: 0 0 12px rgba(255,255,255,1); transition: left 0.3s ease; z-index: 1;">
+                                    <div style="position: absolute; top: -8px; left: -6px; width: 0; height: 0; border-left: 8px solid transparent; border-right: 8px solid transparent; border-top: 8px solid #ffffff;"></div>
+                                </div>
+                            </div>
+                            <div style="text-align: center; margin-top: 0.75rem; font-size: 0.85rem; color: var(--text-muted);">
+                                Saturation Index: <strong id="heatmap-saturation-val" style="color: #fff; font-family: 'JetBrains Mono', monospace;">0.00%</strong>
+                            </div>
+                        </div>
+                    </div>
+
                     <!-- Browser Core Web Vitals Panel -->
                     <div class="card glass-card browser-vitals-card hide" id="card-browser-vitals">
                         <div class="card-header">
@@ -524,6 +556,20 @@
                         </div>
                     </div>
 
+                    <!-- Epic 5: Recommendation Engine v1 -->
+                    <div class="card glass-card hide" id="card-recommendation">
+                        <div class="card-header" style="border-bottom-color: rgba(16, 185, 129, 0.3);">
+                            <h2 class="card-title" style="color: #10B981;">Performance AI Recommendations</h2>
+                            <span class="badge badge-green">Auto-Generated Insight</span>
+                        </div>
+                        <div class="card-body">
+                            <ul id="recommendation-list" style="margin: 0; padding-left: 1.5rem; color: var(--text-main); font-size: 0.95rem; line-height: 1.6;">
+                                <li>Waiting for test completion...</li>
+                            </ul>
+                        </div>
+                    </div>
+
+
                     <!-- Live Event Console -->
                     <div class="card glass-card terminal-card">
                         <div class="card-header">
@@ -584,7 +630,7 @@
                 <div class="card glass-card full-card">
                     <div class="card-header">
                         <h2 class="card-title">Run Comparison & Regression Analysis</h2>
-                        <span class="badge badge-purple">Sprint 2</span>
+                        <span id="comp-regression-status" class="badge badge-purple">Select Runs</span>
                     </div>
                     <div class="card-body">
                         <div class="comparison-selectors">
@@ -597,6 +643,7 @@
                                 <select id="select-run-b" class="wizard-input-field"></select>
                             </div>
                             <button class="btn btn-primary" id="btn-run-comparison" style="height: 48px; padding: 0 2rem;">Compare Runs</button>
+                            <button class="btn btn-secondary" id="btn-export-pdf" style="height: 48px; padding: 0 2rem;">Export to PDF</button>
                         </div>
                         
                         <div id="comparison-results-view" class="hide">
@@ -888,9 +935,47 @@
                                 </div>
                             </div>
 
-                            <!-- Step 6: Scenario Preview -->
+                            <!-- Step 6: Metadata & Release Tracking -->
+                            <div class="wizard-step">
+                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 6: Release Metadata (Optional)</h3>
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem;">
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Environment</label>
+                                        <select id="wiz-meta-env" class="wizard-input-field" style="background: rgba(0,0,0,0.2);">
+                                            <option value="">-- Select --</option>
+                                            <option value="DEV">Development</option>
+                                            <option value="STAGING">Staging</option>
+                                            <option value="PROD">Production</option>
+                                        </select>
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">App Version</label>
+                                        <input type="text" id="wiz-meta-version" class="wizard-input-field" placeholder="e.g. v2.4.1">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Release Tag</label>
+                                        <input type="text" id="wiz-meta-tag" class="wizard-input-field" placeholder="e.g. sprint-3-rc1">
+                                    </div>
+                                </div>
+                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Build Number</label>
+                                        <input type="text" id="wiz-meta-build" class="wizard-input-field" placeholder="e.g. #1084">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Executed By</label>
+                                        <input type="text" id="wiz-meta-user" class="wizard-input-field" placeholder="User identity">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Notes</label>
+                                        <input type="text" id="wiz-meta-notes" class="wizard-input-field" placeholder="Test summary">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 7: Scenario Preview -->
                             <div class="wizard-step" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2);">
-                                <h3 style="font-size: 1rem; color: #10B981; margin-bottom: 0.75rem;">Step 6: Scenario Projection Preview</h3>
+                                <h3 style="font-size: 1rem; color: #10B981; margin-bottom: 0.75rem;">Step 7: Scenario Projection Preview</h3>
                                 <p id="wiz-preview-text" style="font-size: 0.85rem; color: #9CA3AF; line-height: 1.5; margin: 0; white-space: pre-wrap;">
                                     Configure workload to see projections.
                                 </p>

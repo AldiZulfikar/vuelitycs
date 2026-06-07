@@ -433,6 +433,7 @@ func (s *DashboardServer) HandlerRoutes() *http.ServeMux {
 	mux.HandleFunc("/api/series", s.handleFetchSeries)
 	mux.HandleFunc("/api/comparison", s.handleRunComparison)
 	mux.HandleFunc("/api/wizard/generate", s.handleWizardGenerate)
+	mux.HandleFunc("/api/scenarios", s.handleScenarios)
 
 	mux.HandleFunc("/api/stream", s.handleSSEStream)
 
@@ -614,6 +615,12 @@ func (s *DashboardServer) handleRunScenario(w http.ResponseWriter, r *http.Reque
 				InflectionPoint:  inflectionVal,
 				SaturationIndex:  saturationVal,
 				SLAStatus:        slaStatus,
+				AppVersion:       scen.Metadata["app_version"],
+				BuildNumber:      scen.Metadata["build_number"],
+				Environment:      scen.Metadata["environment"],
+				ReleaseTag:       scen.Metadata["release_tag"],
+				ExecutedBy:       scen.Metadata["executed_by"],
+				Notes:            scen.Metadata["notes"],
 			})
 		}
 
@@ -763,6 +770,8 @@ func (s *DashboardServer) handleWizardGenerate(w http.ResponseWriter, r *http.Re
 		DurationSeconds int                    `json:"duration_seconds"`
 		RampUpSeconds   int                    `json:"ramp_up_seconds"`
 		PacingMs        int                    `json:"pacing_ms"`
+		SLAs            *scenario.SLAConfig    `json:"slas,omitempty"`
+		Metadata        map[string]string      `json:"metadata,omitempty"`
 		Config          map[string]interface{} `json:"config"`
 	}
 
@@ -820,9 +829,61 @@ func (s *DashboardServer) handleWizardGenerate(w http.ResponseWriter, r *http.Re
 		PacingMs:        req.PacingMs,
 		TestType:        req.TestType,
 		Scheduler:       req.TestType + "Scheduler",
+		SLAs:            req.SLAs,
+		Metadata:        req.Metadata,
 		Config:          req.Config,
 	}
 
 	w.WriteHeader(http.StatusOK)
 	_ = json.NewEncoder(w).Encode(scen)
+}
+
+func (s *DashboardServer) handleScenarios(w http.ResponseWriter, r *http.Request) {
+	w.Header().Set("Content-Type", "application/json")
+	db, err := storage.GetStorage()
+	if err != nil || db == nil {
+		w.WriteHeader(http.StatusInternalServerError)
+		_, _ = w.Write([]byte(`{"error":"Database not available"}`))
+		return
+	}
+
+	if r.Method == http.MethodGet {
+		scens, err := db.GetScenarios()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"error":"Failed to fetch scenarios"}`))
+			return
+		}
+		_ = json.NewEncoder(w).Encode(scens)
+		return
+	} else if r.Method == http.MethodPost {
+		var payload struct {
+			ID         string          `json:"id"`
+			Name       string          `json:"name"`
+			ConfigJSON json.RawMessage `json:"config_json"`
+		}
+		if err := json.NewDecoder(r.Body).Decode(&payload); err != nil {
+			w.WriteHeader(http.StatusBadRequest)
+			_, _ = w.Write([]byte(`{"error":"Invalid payload"}`))
+			return
+		}
+		
+		if payload.ID == "" {
+			payload.ID = fmt.Sprintf("scen-%d", time.Now().UnixMilli())
+		}
+		
+		err = db.InsertScenario(payload.ID, payload.Name, string(payload.ConfigJSON))
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"error":"Failed to save scenario"}`))
+			return
+		}
+		
+		w.WriteHeader(http.StatusOK)
+		_, _ = w.Write([]byte(`{"status":"success", "id":"` + payload.ID + `"}`))
+		return
+	}
+
+	w.WriteHeader(http.StatusMethodNotAllowed)
+	_, _ = w.Write([]byte(`{"error":"Method not allowed"}`))
 }

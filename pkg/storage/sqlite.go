@@ -238,6 +238,47 @@ func (s *SQLiteStorage) InsertRun(sum RunSummary) error {
 	return err
 }
 
+type ScenarioRecord struct {
+	ID         string `json:"id"`
+	Name       string `json:"name"`
+	ConfigJSON string `json:"config_json"`
+	CreatedAt  string `json:"created_at"`
+	UpdatedAt  string `json:"updated_at"`
+}
+
+// InsertScenario saves a generated scenario config to SQLite
+func (s *SQLiteStorage) InsertScenario(id, name, configJSON string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	query := `INSERT OR REPLACE INTO scenarios (id, name, config_json, created_at, updated_at) VALUES (?, ?, ?, ?, ?)`
+	now := time.Now().Format(time.RFC3339)
+	_, err := s.db.Exec(query, id, name, configJSON, now, now)
+	return err
+}
+
+// GetScenarios retrieves all saved scenarios
+func (s *SQLiteStorage) GetScenarios() ([]ScenarioRecord, error) {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	query := `SELECT id, name, config_json, created_at, updated_at FROM scenarios ORDER BY updated_at DESC`
+	rows, err := s.db.Query(query)
+	if err != nil {
+		return nil, err
+	}
+	defer rows.Close()
+
+	var results []ScenarioRecord
+	for rows.Next() {
+		var rec ScenarioRecord
+		if err := rows.Scan(&rec.ID, &rec.Name, &rec.ConfigJSON, &rec.CreatedAt, &rec.UpdatedAt); err == nil {
+			results = append(results, rec)
+		}
+	}
+	return results, nil
+}
+
 // InsertMetrics saves real-time metrics tick to SQLite
 func (s *SQLiteStorage) InsertMetrics(runID string, ts int64, seq int, module, testType, stage, dataType string, vus, success, failed int64, currentRPS, avgRPS, peakRPS float64) error {
 	s.mu.Lock()

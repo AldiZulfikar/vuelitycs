@@ -33,6 +33,7 @@ type Scenario struct {
 	TestType        string                 `json:"test_type,omitempty"` // LOAD, STRESS, SPIKE, SOAK, VOLUME, SCALABILITY
 	Scheduler       string                 `json:"scheduler,omitempty"` // LoadScheduler, StressScheduler, SpikeScheduler, SoakScheduler, VolumeScheduler, ScalabilityScheduler
 	SLAs            *SLAConfig             `json:"slas,omitempty"`
+	Metadata        map[string]string      `json:"metadata,omitempty"`
 	Config          map[string]interface{} `json:"config"`
 }
 

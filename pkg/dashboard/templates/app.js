@@ -560,6 +560,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 lblOverviewStage.textContent = "COMPLETE";
                 appendTerminalLine(`<<< Scenario Completed successfully in ${(ev.payload.elapsed_ms / 1000).toFixed(2)}s`, 'complete-msg');
                 setTimeout(fetchHistory, 1000);
+                
+                // Epic 5: Generate Recommendations
+                generateRecommendations();
                 break;
 
             case 'VU_STARTED':
@@ -641,7 +644,26 @@ document.addEventListener('DOMContentLoaded', () => {
             lblCapacitySafe.textContent = m.capacity.safe_vus + ' VU';
             lblCapacityInflection.textContent = m.capacity.inflection_vus + ' VU';
             lblCapacityCritical.textContent = m.capacity.critical_vus + ' VU';
-            lblCapacitySaturation.textContent = (m.capacity.saturation_index * 100).toFixed(0) + '%';
+            const saturationPct = m.capacity.saturation_index * 100;
+            lblCapacitySaturation.textContent = saturationPct.toFixed(0) + '%';
+            
+            // Epic 10: Update Heatmap Pointer
+            const heatmapPointer = document.getElementById('heatmap-pointer');
+            const heatmapText = document.getElementById('heatmap-saturation-val');
+            if (heatmapPointer && heatmapText) {
+                // Clamp between 0% and 100%
+                let leftPos = saturationPct;
+                if (leftPos > 100) leftPos = 100;
+                if (leftPos < 0) leftPos = 0;
+                
+                heatmapPointer.style.left = `${leftPos}%`;
+                heatmapText.textContent = `${saturationPct.toFixed(2)}%`;
+                
+                // Colorize text
+                if (leftPos <= 50) heatmapText.style.color = '#10B981';
+                else if (leftPos <= 80) heatmapText.style.color = '#F59E0B';
+                else heatmapText.style.color = '#EF4444';
+            }
             
             // Highlight saturation colors
             const satClass = m.capacity.saturation_class || "Healthy";
@@ -915,12 +937,51 @@ document.addEventListener('DOMContentLoaded', () => {
             fillCompTableRow('safe', detailA.safe_capacity + ' VU', detailB.safe_capacity + ' VU', formatDeltaValue(delta.safe_capacity_delta, ' VU'), delta.safe_capacity_delta >= 0);
             fillCompTableRow('critical', detailA.critical_capacity + ' VU', detailB.critical_capacity + ' VU', formatDeltaValue(delta.critical_capacity_delta, ' VU'), delta.critical_capacity_delta >= 0);
 
+            // Epic 9: Regression Analysis V2
+            let statusComp = "PASS";
+            let statusColor = "bg-green";
+            const latencyPct = detailA.p95_latency_micro > 0 ? (delta.p95_delta / detailA.p95_latency_micro) * 100 : 0;
+            const errIncrease = delta.error_rate_delta * 100;
+            const rpsPct = detailA.peak_rps > 0 ? (delta.peak_rps_delta / detailA.peak_rps) * 100 : 0;
+            
+            let issues = [];
+            if (latencyPct > 10) { issues.push(`Latency +${latencyPct.toFixed(1)}%`); }
+            if (errIncrease > 2) { issues.push(`Errors +${errIncrease.toFixed(1)}%`); }
+            if (rpsPct < -15) { issues.push(`RPS ${rpsPct.toFixed(1)}%`); }
+            
+            if (issues.length > 0) {
+                statusComp = "FAIL: " + issues.join(", ");
+                statusColor = "bg-red";
+            } else if (latencyPct > 5 || rpsPct < -5) {
+                statusComp = "WARNING";
+                statusColor = "bg-yellow";
+            }
+            
+            const badge = document.getElementById('comp-regression-status');
+            if (badge) {
+                badge.textContent = statusComp;
+                badge.className = `badge ${statusColor}`;
+            }
+
             viewCompResult.classList.remove('hide');
         } catch (err) {
             console.error("Comparison execution error:", err);
             alert("Error comparing runs: " + err.message);
         }
     });
+
+    // Epic 11: Executive PDF Report Export
+    const btnExportPdf = document.getElementById('btn-export-pdf');
+    if (btnExportPdf) {
+        btnExportPdf.addEventListener('click', () => {
+            if (viewCompResult.classList.contains('hide')) {
+                alert("Please run a comparison first before exporting the report.");
+                return;
+            }
+            // Trigger native print dialog which allows "Save as PDF"
+            window.print();
+        });
+    }
 
     function formatDeltaLatency(val) {
         const sign = val > 0 ? '+' : '';
@@ -1104,6 +1165,16 @@ document.addEventListener('DOMContentLoaded', () => {
         if (errRate) slas.max_error_rate = parseFloat(errRate);
         if (minRps) slas.min_throughput = parseFloat(minRps);
 
+        // Epic 8: Release Metadata
+        const metadata = {
+            environment: document.getElementById('wiz-meta-env')?.value || "",
+            app_version: document.getElementById('wiz-meta-version')?.value || "",
+            release_tag: document.getElementById('wiz-meta-tag')?.value || "",
+            build_number: document.getElementById('wiz-meta-build')?.value || "",
+            executed_by: document.getElementById('wiz-meta-user')?.value || "",
+            notes: document.getElementById('wiz-meta-notes')?.value || ""
+        };
+
         const payload = {
             name: `Wizard ${activeWizProtocol} ${activeWizTestType} Test`,
             protocol: activeWizProtocol,
@@ -1113,6 +1184,7 @@ document.addEventListener('DOMContentLoaded', () => {
             ramp_up_seconds: rampUp,
             pacing_ms: pacing,
             slas: Object.keys(slas).length > 0 ? slas : undefined,
+            metadata: metadata,
             config: configObj
         };
 
@@ -1137,4 +1209,126 @@ document.addEventListener('DOMContentLoaded', () => {
             alert("Wizard generation connection error: " + err.message);
         }
     });
+
+    // Epic 5: Recommendation Engine Logic
+    window.generateRecommendations = function() {
+        const safeVU = parseInt(lblCapacitySafe.textContent) || 0;
+        const critVU = parseInt(lblCapacityCritical.textContent) || 0;
+        const inflectionVU = parseInt(lblCapacityInflection.textContent) || 0;
+        const errRateStr = lblErrorRate.textContent || "0%";
+        const errRate = parseFloat(errRateStr) || 0;
+        
+        const list = document.getElementById('recommendation-list');
+        const card = document.getElementById('card-recommendation');
+        if (!list || !card) return;
+        
+        list.innerHTML = "";
+        let recs = [];
+        
+        if (errRate > 5) {
+            recs.push(`<li><strong style="color: #EF4444;">High Error Rate:</strong> System experienced ${errRateStr} errors. Consider inspecting backend logs or scaling compute resources. Next step: Run a lower Volume test to isolate error triggers.</li>`);
+        }
+        
+        if (inflectionVU > 0) {
+            recs.push(`<li><strong style="color: #F59E0B;">Latency Inflection:</strong> Latency degraded significantly at <strong>${inflectionVU} VUs</strong>. This is your primary bottleneck threshold.</li>`);
+        }
+        
+        if (critVU > 0 && critVU < currentTargetVUs) {
+            recs.push(`<li><strong style="color: #EF4444;">Capacity Exceeded:</strong> Target workload (${currentTargetVUs} VUs) exceeded critical capacity (${critVU} VUs). System was saturated. Recommend setting Max VUs to ${safeVU} in production.</li>`);
+        } else if (safeVU > 0) {
+            recs.push(`<li><strong style="color: #10B981;">Safe Operating Limit:</strong> System performs comfortably at <strong>${safeVU} VUs</strong>. This is the recommended baseline capacity.</li>`);
+        }
+        
+        if (recs.length === 0) {
+            recs.push(`<li><strong style="color: #3B82F6;">Stable Workload:</strong> No major bottlenecks detected. System successfully handled the target workload. Recommend increasing VUs by 25% for the next Stress Test.</li>`);
+        }
+        
+        list.innerHTML = recs.join("");
+        card.classList.remove('hide');
+        list.innerHTML = recs.join("");
+        card.classList.remove('hide');
+    };
+
+    // Epic 6 & 7: Scenario Management & Versioning
+    const btnScenSave = document.getElementById('btn-scen-save');
+    const btnScenLoad = document.getElementById('btn-scen-load');
+    const btnScenDuplicate = document.getElementById('btn-scen-duplicate');
+    const selectSavedScen = document.getElementById('select-saved-scenarios');
+    
+    let savedScenariosData = [];
+
+    async function fetchScenarios() {
+        if (!selectSavedScen) return;
+        try {
+            const resp = await fetch('/api/scenarios');
+            if (resp.ok) {
+                savedScenariosData = await resp.json();
+                selectSavedScen.innerHTML = '<option value="">-- Select Saved Scenario --</option>';
+                if (savedScenariosData) {
+                    savedScenariosData.forEach(s => {
+                        const opt = document.createElement('option');
+                        opt.value = s.id;
+                        opt.textContent = `${s.name} (${new Date(s.updated_at).toLocaleString()})`;
+                        selectSavedScen.appendChild(opt);
+                    });
+                }
+            }
+        } catch (e) { console.error("Failed to fetch scenarios", e); }
+    }
+
+    if (btnScenSave) {
+        btnScenSave.addEventListener('click', async () => {
+            try {
+                const configRaw = txtDsl.value;
+                const configObj = JSON.parse(configRaw);
+                const scenName = configObj.name || "Unnamed Scenario";
+                const scenId = selectSavedScen.value || ""; // If empty, backend creates new ID
+
+                const resp = await fetch('/api/scenarios', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ id: scenId, name: scenName, config_json: configObj })
+                });
+
+                if (resp.ok) {
+                    appendTerminalLine(`Saved scenario: ${scenName}`, 'system-msg');
+                    fetchScenarios();
+                } else {
+                    alert("Failed to save scenario");
+                }
+            } catch (err) {
+                alert("Invalid JSON configuration. Cannot save.");
+            }
+        });
+    }
+
+    if (btnScenLoad) {
+        btnScenLoad.addEventListener('click', () => {
+            const scenId = selectSavedScen.value;
+            if (!scenId) { alert("Please select a scenario to load."); return; }
+            const scen = savedScenariosData.find(s => s.id === scenId);
+            if (scen) {
+                txtDsl.value = JSON.stringify(JSON.parse(scen.config_json), null, 2);
+                appendTerminalLine(`Loaded scenario: ${scen.name}`, 'system-msg');
+            }
+        });
+    }
+
+    if (btnScenDuplicate) {
+        btnScenDuplicate.addEventListener('click', () => {
+            try {
+                const configRaw = txtDsl.value;
+                const configObj = JSON.parse(configRaw);
+                configObj.name = configObj.name + " (Copy)";
+                txtDsl.value = JSON.stringify(configObj, null, 2);
+                selectSavedScen.value = ""; // Deselect so it saves as new
+                appendTerminalLine(`Duplicated scenario. Click Save to persist.`, 'system-msg');
+            } catch (err) {
+                alert("Invalid JSON configuration.");
+            }
+        });
+    }
+
+    // Initial fetch
+    fetchScenarios();
 });
