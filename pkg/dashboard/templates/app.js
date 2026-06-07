@@ -7,8 +7,6 @@ document.addEventListener('DOMContentLoaded', () => {
     const txtDsl = document.getElementById('txt-scenario-dsl');
     const btnStart = document.getElementById('btn-start-test');
     const btnStop = document.getElementById('btn-stop-test');
-    const btnPresetHttp = document.getElementById('btn-preset-http');
-    const btnPresetBrowser = document.getElementById('btn-preset-browser');
     
     // Overview Panel
     const lblOverviewName = document.getElementById('lbl-overview-name');
@@ -85,7 +83,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
     const historyTableBody = document.getElementById('history-table-body');
     const lblEngineStatus = document.getElementById('lbl-engine-status');
-    const headerPresetControls = document.getElementById('header-preset-controls');
 
     let currentScenarioName = "HTTP Core Load Run";
     let currentTargetVUs = 15;
@@ -122,30 +119,16 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     };
 
-    // Load presets
-    btnPresetHttp.addEventListener('click', () => {
-        txtDsl.value = JSON.stringify(PRESET_HTTP, null, 2);
-        appendTerminalLine('Loaded HTTP preset configurations.', 'system-msg');
-    });
-
-    btnPresetBrowser.addEventListener('click', () => {
-        txtDsl.value = JSON.stringify(PRESET_BROWSER, null, 2);
-        appendTerminalLine('Loaded Headless Browser (chromedp) preset.', 'system-msg');
-    });
-
     // View Navigation Router
     function navigateTo(tab) {
         // Remove active class from all links
         [btnNavDashboard, btnNavHistory, btnNavComparison, btnNavWizard].forEach(btn => btn.classList.remove('active'));
         // Hide all panels
         [panelDashboard, panelHistory, panelComparison, panelWizard].forEach(panel => panel.classList.add('hide'));
-        // Show/hide presets
-        headerPresetControls.classList.add('hide');
 
         if (tab === 'dashboard') {
             btnNavDashboard.classList.add('active');
             panelDashboard.classList.remove('hide');
-            headerPresetControls.classList.remove('hide');
             document.getElementById('lbl-page-title').textContent = "Performance Engineering Dashboard";
             document.getElementById('lbl-page-subtitle').textContent = "Vuelitycs high-precision telemetry & bottleneck analysis";
         } else if (tab === 'history') {
@@ -352,8 +335,88 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     });
 
+    let currentPlannedVUs = 0;
+
+    // Chart 4: Workload Profile (Target VUs vs Time)
+    const ctxWorkload = document.getElementById('chart-live-workload').getContext('2d');
+    const chartWorkload = new Chart(ctxWorkload, {
+        type: 'line',
+        data: {
+            labels: [],
+            datasets: [
+                {
+                    label: 'Target VU',
+                    data: [],
+                    borderColor: '#3B82F6',
+                    backgroundColor: 'rgba(59, 130, 246, 0.05)',
+                    borderWidth: 2,
+                    borderDash: [5, 5],
+                    fill: true,
+                    tension: 0.1
+                },
+                {
+                    label: 'Active VU',
+                    data: [],
+                    borderColor: '#10B981',
+                    backgroundColor: 'transparent',
+                    borderWidth: 3,
+                    tension: 0.3
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            scales: {
+                x: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: { color: '#9CA3AF', font: { family: 'Outfit' } },
+                    title: { display: true, text: 'Time (Seconds)', color: '#9CA3AF', font: { family: 'Outfit' } }
+                },
+                y: {
+                    grid: { color: 'rgba(255, 255, 255, 0.05)' },
+                    ticks: {
+                        color: '#9CA3AF',
+                        font: { family: 'Outfit' },
+                        callback: function(v) { return v.toFixed(0) + ' VU'; }
+                    },
+                    title: { display: true, text: 'Virtual Users (VU)', color: '#9CA3AF', font: { family: 'Outfit' } }
+                }
+            },
+            plugins: { legend: { display: true, labels: { color: '#9CA3AF', font: { family: 'Outfit' } } } }
+        }
+    });
+
+    function setupWorkloadProfile(vus, rampUpSeconds, durationSeconds) {
+        if (!vus) vus = 10;
+        if (rampUpSeconds === undefined || rampUpSeconds === null) rampUpSeconds = 0;
+        if (!durationSeconds) durationSeconds = 10;
+
+        currentPlannedVUs = vus;
+
+        const totalDuration = rampUpSeconds + durationSeconds;
+        const labels = [];
+        const targetData = [];
+        const activeData = [];
+
+        for (let t = 0; t <= totalDuration; t++) {
+            labels.push(t + 's');
+            if (t < rampUpSeconds) {
+                targetData.push(Math.round(vus * (t / rampUpSeconds)));
+            } else {
+                targetData.push(vus);
+            }
+            activeData.push(null);
+        }
+
+        chartWorkload.data.labels = labels;
+        chartWorkload.data.datasets[0].data = targetData;
+        chartWorkload.data.datasets[1].data = activeData;
+        chartWorkload.update();
+    }
+
     function resetCharts() {
-        [chartLatency, chartThroughput, chartCapacity].forEach(c => {
+        [chartLatency, chartThroughput, chartCapacity, chartWorkload].forEach(c => {
             c.data.labels = [];
             c.data.datasets.forEach(d => d.data = []);
             c.update();
@@ -393,6 +456,21 @@ document.addEventListener('DOMContentLoaded', () => {
             chartCapacity.data.datasets.forEach(d => d.data.shift());
         }
         chartCapacity.update();
+
+        // Update Workload Profile
+        if (chartWorkload.data.labels.length > 0) {
+            const idx = seconds;
+            if (idx >= 0 && idx < chartWorkload.data.datasets[1].data.length) {
+                chartWorkload.data.datasets[1].data[idx] = activeVUs;
+            } else {
+                if (idx >= chartWorkload.data.labels.length) {
+                    chartWorkload.data.labels.push(seconds + 's');
+                    chartWorkload.data.datasets[0].data.push(currentPlannedVUs || activeVUs);
+                }
+                chartWorkload.data.datasets[1].data[idx] = activeVUs;
+            }
+            chartWorkload.update();
+        }
     }
 
     // Server-Sent Events Telemetry Stream
@@ -602,6 +680,9 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Dynamic Charting
+        if (m.scenario_config && chartWorkload.data.datasets[0].data.length === 0) {
+            setupWorkloadProfile(m.scenario_config.vus, m.scenario_config.ramp_up_seconds, m.scenario_config.duration_seconds);
+        }
         updateChartsData(m.elapsed_seconds, m.active_vus, m.latency.p50, m.latency.p95, m.latency.p99, rpsVal, errorRateVal);
 
         // Core Web Vitals
@@ -657,12 +738,16 @@ document.addEventListener('DOMContentLoaded', () => {
     // Deploy and Start API Call
     btnStart.addEventListener('click', async () => {
         let dslContent = txtDsl.value;
+        let parsed = null;
         try {
-            JSON.parse(dslContent);
+            parsed = JSON.parse(dslContent);
         } catch (e) {
             alert("JSON DSL Syntax Error: " + e.message);
             return;
         }
+
+        resetCharts();
+        setupWorkloadProfile(parsed.vus, parsed.ramp_up_seconds, parsed.duration_seconds);
 
         appendTerminalLine("Deploying Scenario DSL payload to engine...", "system-msg");
 

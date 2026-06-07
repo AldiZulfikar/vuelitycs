@@ -189,10 +189,6 @@
                     <h1 id="lbl-page-title">Performance Engineering Platform</h1>
                     <p class="header-subtitle" id="lbl-page-subtitle">Vuelitycs high-precision telemetry & bottleneck analysis</p>
                 </div>
-                <div class="header-controls" id="header-preset-controls">
-                    <button class="btn btn-secondary" id="btn-preset-http">Load HTTP Scenario</button>
-                    <button class="btn btn-secondary" id="btn-preset-browser">Load Browser Scenario</button>
-                </div>
             </header>
 
             <!-- Primary Dashboard Panel -->
@@ -405,13 +401,24 @@
                             </div>
                         </div>
                         <!-- Capacity Timeline Chart -->
-                        <div class="card glass-card chart-card" style="grid-column: span 2;">
+                        <div class="card glass-card chart-card">
                             <div class="card-header">
                                 <h2 class="card-title">Capacity Timeline (VU vs Latency & Errors)</h2>
                             </div>
                             <div class="card-body">
-                                <div class="chart-container" style="position: relative; height: 220px;">
+                                <div class="chart-container" style="position: relative; height: 180px;">
                                     <canvas id="chart-live-capacity"></canvas>
+                                </div>
+                            </div>
+                        </div>
+                        <!-- Workload Profile Chart -->
+                        <div class="card glass-card chart-card">
+                            <div class="card-header">
+                                <h2 class="card-title">Workload Profile (Target VUs vs Time)</h2>
+                            </div>
+                            <div class="card-body">
+                                <div class="chart-container" style="position: relative; height: 180px;">
+                                    <canvas id="chart-live-workload"></canvas>
                                 </div>
                             </div>
                         </div>

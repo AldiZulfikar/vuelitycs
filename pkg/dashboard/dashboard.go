@@ -50,6 +50,11 @@ type activeMetrics struct {
 	pacingMs           int
 	mu                 sync.RWMutex
 
+	// Ramping parameters for Workload Profile
+	VUsPlanned         int
+	RampUpSeconds      int
+	DurationSeconds    int
+
 	// Browser specific averages
 	fcpSum            int64
 	lcpSum            int64
@@ -327,6 +332,12 @@ func (s *DashboardServer) broadcastSummary() {
 			"saturation_class": saturationClass,
 		},
 		"imf": imfMessage,
+		"scenario_config": map[string]interface{}{
+			"name":             active.Name,
+			"vus":              active.VUsPlanned,
+			"ramp_up_seconds":  active.RampUpSeconds,
+			"duration_seconds": active.DurationSeconds,
+		},
 	}
 
 	// Add browser metrics if applicable
@@ -512,6 +523,9 @@ func (s *DashboardServer) handleRunScenario(w http.ResponseWriter, r *http.Reque
 		CorrectedHistogram: metrics.NewHDRHistogram(1, 600000000),
 		startTime:          time.Now(),
 		pacingMs:           scen.PacingMs,
+		VUsPlanned:         scen.VUs,
+		RampUpSeconds:      scen.RampUpSeconds,
+		DurationSeconds:    scen.DurationSeconds,
 	}
 	s.isRunning = true
 
