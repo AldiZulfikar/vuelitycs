@@ -62,6 +62,13 @@ func (s *SQLiteStorage) initSchema() error {
 	defer s.mu.Unlock()
 
 	queries := []string{
+		`CREATE TABLE IF NOT EXISTS scenarios (
+			id TEXT PRIMARY KEY,
+			name TEXT,
+			config_json TEXT,
+			created_at DATETIME,
+			updated_at DATETIME
+		);`,
 		`CREATE TABLE IF NOT EXISTS runs (
 			run_id TEXT PRIMARY KEY,
 			scenario_id TEXT,
@@ -78,7 +85,14 @@ func (s *SQLiteStorage) initSchema() error {
 			safe_capacity INTEGER DEFAULT 0,
 			critical_capacity INTEGER DEFAULT 0,
 			inflection_point INTEGER DEFAULT 0,
-			saturation_index REAL DEFAULT 0.0
+			saturation_index REAL DEFAULT 0.0,
+			sla_status TEXT DEFAULT 'NONE',
+			app_version TEXT DEFAULT '',
+			build_number TEXT DEFAULT '',
+			environment TEXT DEFAULT '',
+			release_tag TEXT DEFAULT '',
+			executed_by TEXT DEFAULT '',
+			notes TEXT DEFAULT ''
 		);`,
 		`CREATE TABLE IF NOT EXISTS metrics (
 			run_id TEXT,
@@ -186,16 +200,41 @@ func (s *SQLiteStorage) initSchema() error {
 	return nil
 }
 
+type RunSummary struct {
+	RunID            string
+	ScenarioID       string
+	ScenarioName     string
+	TestType         string
+	P95              int64
+	P99              int64
+	P999             int64
+	PeakRPS          float64
+	ErrorRate        float64
+	Duration         int
+	Status           string
+	SafeCapacity     int
+	CriticalCapacity int
+	InflectionPoint  int
+	SaturationIndex  float64
+	SLAStatus        string
+	AppVersion       string
+	BuildNumber      string
+	Environment      string
+	ReleaseTag       string
+	ExecutedBy       string
+	Notes            string
+}
+
 // InsertRun saves a completed scenario run summary to SQLite
-func (s *SQLiteStorage) InsertRun(runID, scenarioID, scenarioName, testType string, p95, p99, p999 int64, peakRPS, errorRate float64, duration int, status string, safe, critical, inflection int, saturation float64) error {
+func (s *SQLiteStorage) InsertRun(sum RunSummary) error {
 	s.mu.Lock()
 	defer s.mu.Unlock()
 
 	query := `INSERT OR REPLACE INTO runs 
-		(run_id, scenario_id, scenario_name, test_type, p95, p99, p99_9, peak_rps, error_rate, duration, status, timestamp, safe_capacity, critical_capacity, inflection_point, saturation_index) 
-		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
+		(run_id, scenario_id, scenario_name, test_type, p95, p99, p99_9, peak_rps, error_rate, duration, status, timestamp, safe_capacity, critical_capacity, inflection_point, saturation_index, sla_status, app_version, build_number, environment, release_tag, executed_by, notes) 
+		VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)`
 	
-	_, err := s.db.Exec(query, runID, scenarioID, scenarioName, testType, p95, p99, p999, peakRPS, errorRate, duration, status, time.Now(), safe, critical, inflection, saturation)
+	_, err := s.db.Exec(query, sum.RunID, sum.ScenarioID, sum.ScenarioName, sum.TestType, sum.P95, sum.P99, sum.P999, sum.PeakRPS, sum.ErrorRate, sum.Duration, sum.Status, time.Now(), sum.SafeCapacity, sum.CriticalCapacity, sum.InflectionPoint, sum.SaturationIndex, sum.SLAStatus, sum.AppVersion, sum.BuildNumber, sum.Environment, sum.ReleaseTag, sum.ExecutedBy, sum.Notes)
 	return err
 }
 

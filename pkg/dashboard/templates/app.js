@@ -987,6 +987,88 @@ document.addEventListener('DOMContentLoaded', () => {
         activeWizTestType = btn.dataset.type;
     });
 
+    // Epic 3: Template Library
+    const wizTemplate = document.getElementById('wiz-template');
+    wizTemplate.addEventListener('change', (e) => {
+        const val = e.target.value;
+        if (!val) return;
+        
+        let proto = 'HTTP';
+        let type = 'LOAD';
+        let rps = 100, think = 500, peak = 1.5;
+        
+        switch (val) {
+            case 'login-api': rps = 50; think = 1000; type = 'LOAD'; break;
+            case 'search-api': rps = 300; think = 200; type = 'LOAD'; break;
+            case 'checkout-stress': rps = 200; think = 500; peak = 2.0; type = 'STRESS'; break;
+            case 'kafka-producer': rps = 1000; think = 10; proto = 'Kafka'; type = 'VOLUME'; break;
+            case 'kafka-consumer': rps = 500; think = 50; proto = 'Kafka'; type = 'LOAD'; break;
+            case 'db-bench': rps = 500; think = 50; proto = 'Database'; type = 'STRESS'; break;
+            case 'browser-audit': rps = 5; think = 5000; proto = 'Browser'; type = 'LOAD'; break;
+        }
+        
+        document.getElementById('wiz-target-rps').value = rps;
+        document.getElementById('wiz-think-time').value = think;
+        document.getElementById('wiz-peak-mult').value = peak;
+        
+        const pBtn = Array.from(groupWizProtocol.querySelectorAll('.wizard-btn')).find(b => b.dataset.protocol === proto);
+        if (pBtn) pBtn.click();
+        
+        const tBtn = Array.from(groupWizType.querySelectorAll('.wizard-btn')).find(b => b.dataset.type === type);
+        if (tBtn) tBtn.click();
+        
+        btnCalcWorkload.click();
+    });
+
+    // Epic 1: Workload Calculation
+    const btnCalcWorkload = document.getElementById('btn-calc-workload');
+    btnCalcWorkload.addEventListener('click', () => {
+        const rps = parseFloat(document.getElementById('wiz-target-rps').value) || 100;
+        const think = parseFloat(document.getElementById('wiz-think-time').value) || 500;
+        const peak = parseFloat(document.getElementById('wiz-peak-mult').value) || 1.5;
+        
+        const computedVUs = Math.ceil((rps * (think / 1000)) * peak);
+        
+        document.getElementById('wiz-vus').value = computedVUs;
+        document.getElementById('wiz-pacing').value = think;
+        
+        let dur = 60, ramp = 10;
+        if (activeWizTestType === 'STRESS' || activeWizTestType === 'VOLUME') { dur = 120; ramp = 30; }
+        else if (activeWizTestType === 'SPIKE') { dur = 30; ramp = 5; }
+        else if (activeWizTestType === 'SOAK') { dur = 600; ramp = 60; }
+        
+        document.getElementById('wiz-duration').value = dur;
+        document.getElementById('wiz-ramp-up').value = ramp;
+        
+        updatePreview();
+    });
+
+    // Epic 4: Scenario Preview
+    function updatePreview() {
+        const vus = document.getElementById('wiz-vus').value || 0;
+        const dur = document.getElementById('wiz-duration').value || 0;
+        const ramp = document.getElementById('wiz-ramp-up').value || 0;
+        const pacing = document.getElementById('wiz-pacing').value || 100;
+        const estPeakRPS = Math.round((vus / (pacing / 1000)));
+        const hasSla = document.getElementById('wiz-sla-p95').value || document.getElementById('wiz-sla-error').value;
+        
+        const previewText = `• Protocol: ${activeWizProtocol}
+• Test Type: ${activeWizTestType}
+• Workload: Ramps to ${vus} VUs over ${ramp}s, holds for ${dur}s.
+• Estimated Peak RPS: ~${estPeakRPS} req/sec
+• SLAs Configured: ${hasSla ? 'Yes' : 'No'}`;
+
+        const previewEl = document.getElementById('wiz-preview-text');
+        if(previewEl) previewEl.textContent = previewText;
+    }
+
+    document.querySelectorAll('.wizard-input-field').forEach(el => el.addEventListener('input', updatePreview));
+    groupWizProtocol.addEventListener('click', updatePreview);
+    groupWizType.addEventListener('click', updatePreview);
+    
+    // Initial preview render
+    updatePreview();
+
     btnWizGenerate.addEventListener('click', async () => {
         const vus = parseInt(document.getElementById('wiz-vus').value) || 10;
         const duration = parseInt(document.getElementById('wiz-duration').value) || 15;
@@ -1010,6 +1092,18 @@ document.addEventListener('DOMContentLoaded', () => {
             configObj.query = document.getElementById('wiz-db-query').value;
         }
 
+        // Epic 2: SLA Configuration
+        const p95 = document.getElementById('wiz-sla-p95').value;
+        const p99 = document.getElementById('wiz-sla-p99').value;
+        const errRate = document.getElementById('wiz-sla-error').value;
+        const minRps = document.getElementById('wiz-sla-rps').value;
+        
+        const slas = {};
+        if (p95) slas.p95_latency_ms = parseFloat(p95);
+        if (p99) slas.p99_latency_ms = parseFloat(p99);
+        if (errRate) slas.max_error_rate = parseFloat(errRate);
+        if (minRps) slas.min_throughput = parseFloat(minRps);
+
         const payload = {
             name: `Wizard ${activeWizProtocol} ${activeWizTestType} Test`,
             protocol: activeWizProtocol,
@@ -1018,6 +1112,7 @@ document.addEventListener('DOMContentLoaded', () => {
             duration_seconds: duration,
             ramp_up_seconds: rampUp,
             pacing_ms: pacing,
+            slas: Object.keys(slas).length > 0 ? slas : undefined,
             config: configObj
         };
 

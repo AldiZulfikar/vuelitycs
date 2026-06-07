@@ -14,6 +14,14 @@ import (
 	"vuelitycs/pkg/utils"
 )
 
+// SLAConfig represents the performance threshold limits defined for the scenario
+type SLAConfig struct {
+	P95LatencyMs  float64 `json:"p95_latency_ms,omitempty"`
+	P99LatencyMs  float64 `json:"p99_latency_ms,omitempty"`
+	MaxErrorRate  float64 `json:"max_error_rate,omitempty"`
+	MinThroughput float64 `json:"min_throughput,omitempty"`
+}
+
 // Scenario represents the configuration for a performance test run
 type Scenario struct {
 	Name            string                 `json:"name"`
@@ -24,6 +32,7 @@ type Scenario struct {
 	PacingMs        int                    `json:"pacing_ms,omitempty"` // delay between loops
 	TestType        string                 `json:"test_type,omitempty"` // LOAD, STRESS, SPIKE, SOAK, VOLUME, SCALABILITY
 	Scheduler       string                 `json:"scheduler,omitempty"` // LoadScheduler, StressScheduler, SpikeScheduler, SoakScheduler, VolumeScheduler, ScalabilityScheduler
+	SLAs            *SLAConfig             `json:"slas,omitempty"`
 	Config          map[string]interface{} `json:"config"`
 }
 

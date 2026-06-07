@@ -28,23 +28,23 @@ func TestSQLiteStorageE2E(t *testing.T) {
 	testType := "STRESS"
 
 	// 2. Insert Run Summary
-	err = store.InsertRun(
-		runID,
-		scenarioID,
-		"Test Scenario Name",
-		testType,
-		1500,  // p95
-		2500,  // p99
-		5000,  // p999
-		120.5, // peak rps
-		0.02,  // error rate
-		30,    // duration
-		"success",
-		10,    // safe
-		25,    // critical
-		18,    // inflection
-		0.85,  // saturation
-	)
+	err = store.InsertRun(RunSummary{
+		RunID:            runID,
+		ScenarioID:       scenarioID,
+		ScenarioName:     "Test Scenario Name",
+		TestType:         testType,
+		P95:              1500,
+		P99:              2500,
+		P999:             5000,
+		PeakRPS:          120.5,
+		ErrorRate:        0.02,
+		Duration:         30,
+		Status:           "success",
+		SafeCapacity:     10,
+		CriticalCapacity: 25,
+		InflectionPoint:  18,
+		SaturationIndex:  0.85,
+	})
 	if err != nil {
 		t.Fatalf("failed to insert run: %v", err)
 	}

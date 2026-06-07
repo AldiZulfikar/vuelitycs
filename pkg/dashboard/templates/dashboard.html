@@ -717,6 +717,21 @@
                     </div>
                     <div class="card-body">
                         <div class="wizard-steps">
+                            <!-- Step 0: Templates -->
+                            <div class="wizard-step">
+                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Template Library</h3>
+                                <select id="wiz-template" class="wizard-input-field" style="background: rgba(0,0,0,0.2);">
+                                    <option value="">-- Custom Build --</option>
+                                    <option value="login-api">Login API Load Test</option>
+                                    <option value="search-api">Search API Load Test</option>
+                                    <option value="checkout-stress">Checkout Stress Test</option>
+                                    <option value="kafka-producer">Kafka Producer Benchmark</option>
+                                    <option value="kafka-consumer">Kafka Consumer Benchmark</option>
+                                    <option value="db-bench">Database Benchmark</option>
+                                    <option value="browser-audit">Browser Performance Audit</option>
+                                </select>
+                            </div>
+
                             <!-- Step 1 -->
                             <div class="wizard-step">
                                 <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 1: Protocol Selection</h3>
@@ -741,25 +756,47 @@
                                 </div>
                             </div>
 
-                            <!-- Step 3 -->
+                            <!-- Step 3A -->
                             <div class="wizard-step">
-                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 3: Workload Parameters</h3>
+                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 3A: Business Targets (Auto-Calculator)</h3>
+                                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Target RPS</label>
+                                        <input type="number" id="wiz-target-rps" class="wizard-input-field" value="100">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Think Time (ms)</label>
+                                        <input type="number" id="wiz-think-time" class="wizard-input-field" value="500">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Peak Multiplier</label>
+                                        <input type="number" id="wiz-peak-mult" class="wizard-input-field" value="1.5" step="0.1">
+                                    </div>
+                                    <div style="display: flex; align-items: flex-end;">
+                                        <button class="btn btn-secondary" id="btn-calc-workload" style="width: 100%;">Calculate Workload</button>
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 3B -->
+                            <div class="wizard-step">
+                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 3B: Generated Workload Parameters</h3>
                                 <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
                                     <div>
                                         <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Target VUs</label>
-                                        <input type="number" id="wiz-vus" class="wizard-input-field" value="10">
+                                        <input type="number" id="wiz-vus" class="wizard-input-field" value="50">
                                     </div>
                                     <div>
                                         <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Duration (sec)</label>
-                                        <input type="number" id="wiz-duration" class="wizard-input-field" value="15">
+                                        <input type="number" id="wiz-duration" class="wizard-input-field" value="60">
                                     </div>
                                     <div>
                                         <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Ramp Up (sec)</label>
-                                        <input type="number" id="wiz-ramp-up" class="wizard-input-field" value="3">
+                                        <input type="number" id="wiz-ramp-up" class="wizard-input-field" value="10">
                                     </div>
                                     <div>
                                         <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Pacing (ms)</label>
-                                        <input type="number" id="wiz-pacing" class="wizard-input-field" value="100">
+                                        <input type="number" id="wiz-pacing" class="wizard-input-field" value="500">
                                     </div>
                                 </div>
                             </div>
@@ -826,6 +863,37 @@
                                         </div>
                                     </div>
                                 </div>
+                            </div>
+
+                            <!-- Step 5: SLA Thresholds -->
+                            <div class="wizard-step">
+                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 5: SLA Thresholds</h3>
+                                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">P95 Latency (ms)</label>
+                                        <input type="number" id="wiz-sla-p95" class="wizard-input-field" placeholder="e.g. 500">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">P99 Latency (ms)</label>
+                                        <input type="number" id="wiz-sla-p99" class="wizard-input-field" placeholder="e.g. 1000">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Max Error Rate (%)</label>
+                                        <input type="number" id="wiz-sla-error" class="wizard-input-field" placeholder="e.g. 1.0" step="0.1">
+                                    </div>
+                                    <div>
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Min Throughput (RPS)</label>
+                                        <input type="number" id="wiz-sla-rps" class="wizard-input-field" placeholder="e.g. 90">
+                                    </div>
+                                </div>
+                            </div>
+
+                            <!-- Step 6: Scenario Preview -->
+                            <div class="wizard-step" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2);">
+                                <h3 style="font-size: 1rem; color: #10B981; margin-bottom: 0.75rem;">Step 6: Scenario Projection Preview</h3>
+                                <p id="wiz-preview-text" style="font-size: 0.85rem; color: #9CA3AF; line-height: 1.5; margin: 0; white-space: pre-wrap;">
+                                    Configure workload to see projections.
+                                </p>
                             </div>
 
                             <div style="margin-top: 2rem;">

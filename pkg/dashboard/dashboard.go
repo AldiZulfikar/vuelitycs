@@ -55,6 +55,9 @@ type activeMetrics struct {
 	RampUpSeconds      int
 	DurationSeconds    int
 
+	// SLAs configuration
+	SLAs               *scenario.SLAConfig
+
 	// Browser specific averages
 	fcpSum            int64
 	lcpSum            int64
@@ -526,6 +529,7 @@ func (s *DashboardServer) handleRunScenario(w http.ResponseWriter, r *http.Reque
 		VUsPlanned:         scen.VUs,
 		RampUpSeconds:      scen.RampUpSeconds,
 		DurationSeconds:    scen.DurationSeconds,
+		SLAs:               scen.SLAs,
 	}
 	s.isRunning = true
 
@@ -573,9 +577,44 @@ func (s *DashboardServer) handleRunScenario(w http.ResponseWriter, r *http.Reque
 			safeVal, _, criticalVal, inflectionVal, saturationVal = computeCapacity(s.activeTest.VUs, rps, p95, s.activeTest.pacingMs)
 		}
 
+		// Evaluate SLA Compliance
+		slaStatus := "NONE"
+		if s.activeTest.SLAs != nil {
+			slaStatus = "PASS"
+			if s.activeTest.SLAs.P95LatencyMs > 0 && float64(p95)/1000.0 > s.activeTest.SLAs.P95LatencyMs {
+				slaStatus = "FAIL"
+			}
+			if s.activeTest.SLAs.P99LatencyMs > 0 && float64(p99)/1000.0 > s.activeTest.SLAs.P99LatencyMs {
+				slaStatus = "FAIL"
+			}
+			if s.activeTest.SLAs.MaxErrorRate > 0 && errorRate > s.activeTest.SLAs.MaxErrorRate {
+				slaStatus = "FAIL"
+			}
+			if s.activeTest.SLAs.MinThroughput > 0 && rps < s.activeTest.SLAs.MinThroughput {
+				slaStatus = "FAIL"
+			}
+		}
+
 		// Insert completed run summary to SQLite
 		if db, err := storage.GetStorage(); err == nil && db != nil {
-			_ = db.InsertRun(s.activeTest.RunID, s.activeTest.ScenarioID, s.activeTest.Name, s.activeTest.TestType, p95, p99, p999, rps, errorRate, elapsedSec, status, safeVal, criticalVal, inflectionVal, saturationVal)
+			_ = db.InsertRun(storage.RunSummary{
+				RunID:            s.activeTest.RunID,
+				ScenarioID:       s.activeTest.ScenarioID,
+				ScenarioName:     s.activeTest.Name,
+				TestType:         s.activeTest.TestType,
+				P95:              p95,
+				P99:              p99,
+				P999:             p999,
+				PeakRPS:          rps, // simple estimate for now, actual peak is handled elsewhere
+				ErrorRate:        errorRate,
+				Duration:         int(elapsedSec),
+				Status:           status,
+				SafeCapacity:     safeVal,
+				CriticalCapacity: criticalVal,
+				InflectionPoint:  inflectionVal,
+				SaturationIndex:  saturationVal,
+				SLAStatus:        slaStatus,
+			})
 		}
 
 		s.activeTest.mu.RUnlock()
