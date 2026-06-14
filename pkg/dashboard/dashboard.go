@@ -369,6 +369,13 @@ func (s *DashboardServer) broadcastSummary() {
 
 // broadcastEvent writes raw SSE strings to all client channels
 func (s *DashboardServer) broadcastEvent(ev event.Event) {
+	if ev.Type == "REQUEST_COMPLETED" {
+		// Sample completed requests at 5% rate to prevent client-side SSE buffer flooding
+		if time.Now().UnixNano()%100 >= 5 {
+			return
+		}
+	}
+
 	bytes, err := json.Marshal(ev)
 	if err != nil {
 		return
@@ -419,15 +426,73 @@ func (s *DashboardServer) HandlerRoutes() *http.ServeMux {
 		w.Header().Set("Content-Type", "application/json")
 		db, err := storage.GetStorage()
 		if err != nil || db == nil {
-			_, _ = w.Write([]byte("[]"))
+			w.WriteHeader(http.StatusInternalServerError)
+			_, _ = w.Write([]byte(`{"error":"storage unavailable"}`))
 			return
 		}
-		records, err := db.FetchRuns()
-		if err != nil || records == nil {
-			_, _ = w.Write([]byte("[]"))
+
+		if r.Method == http.MethodDelete {
+			runID := r.URL.Query().Get("run_id")
+			if runID == "" {
+				w.WriteHeader(http.StatusBadRequest)
+				_, _ = w.Write([]byte(`{"error":"run_id query parameter required"}`))
+				return
+			}
+			if err := db.DeleteRun(runID); err != nil {
+				w.WriteHeader(http.StatusInternalServerError)
+				_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+				return
+			}
+			_ = json.NewEncoder(w).Encode(map[string]string{"status": "deleted"})
 			return
+		}
+
+		records, err := db.FetchRuns()
+		if err != nil {
+			w.WriteHeader(http.StatusInternalServerError)
+			_ = json.NewEncoder(w).Encode(map[string]string{"error": err.Error()})
+			return
+		}
+		if records == nil {
+			records = []storage.RunHistoryRecord{}
 		}
 		_ = json.NewEncoder(w).Encode(records)
+	})
+
+	mux.HandleFunc("/api/history/report", func(w http.ResponseWriter, r *http.Request) {
+		runID := r.URL.Query().Get("run_id")
+		if runID == "" {
+			http.Error(w, "run_id query parameter required", http.StatusBadRequest)
+			return
+		}
+
+		db, err := storage.GetStorage()
+		if err != nil || db == nil {
+			http.Error(w, "storage unavailable", http.StatusInternalServerError)
+			return
+		}
+
+		detail, err := db.FetchRunDetail(runID)
+		if err != nil {
+			http.Error(w, "run not found: "+err.Error(), http.StatusNotFound)
+			return
+		}
+
+		tpsSeries, _ := db.FetchThroughputSeries(runID)
+		errSeries, _ := db.FetchErrorSeries(runID)
+		capacitySeries, _ := db.FetchCapacitySnapshots(runID)
+
+		report := map[string]interface{}{
+			"run_summary":       detail,
+			"throughput_series": tpsSeries,
+			"error_series":      errSeries,
+			"capacity_series":   capacitySeries,
+			"generated_at":      time.Now().Format(time.RFC3339),
+		}
+
+		w.Header().Set("Content-Type", "application/json")
+		w.Header().Set("Content-Disposition", fmt.Sprintf("attachment; filename=\"vuelitycs-report-%s.json\"", runID))
+		_ = json.NewEncoder(w).Encode(report)
 	})
 
 	mux.HandleFunc("/api/series", s.handleFetchSeries)

@@ -550,3 +550,32 @@ func (s *SQLiteStorage) FetchComparisonResult(runIDA, runIDB string) (*Compariso
 	}
 	return &c, nil
 }
+
+// DeleteRun deletes a run and all associated metrics/data from all tables in SQLite
+func (s *SQLiteStorage) DeleteRun(runID string) error {
+	s.mu.Lock()
+	defer s.mu.Unlock()
+
+	tx, err := s.db.Begin()
+	if err != nil {
+		return err
+	}
+	defer tx.Rollback()
+
+	tables1Param := []string{
+		"runs", "metrics", "histograms", "capacity_analysis",
+		"capacity_snapshots", "throughput_series", "error_series",
+	}
+	for _, tbl := range tables1Param {
+		q := fmt.Sprintf("DELETE FROM %s WHERE run_id = ?", tbl)
+		if _, err := tx.Exec(q, runID); err != nil {
+			return err
+		}
+	}
+
+	if _, err := tx.Exec("DELETE FROM comparison_results WHERE run_id_a = ? OR run_id_b = ?", runID, runID); err != nil {
+		return err
+	}
+
+	return tx.Commit()
+}

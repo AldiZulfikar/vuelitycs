@@ -178,7 +178,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     backgroundColor: 'transparent',
                     borderWidth: 2,
                     tension: 0.3,
-                    pointRadius: 0
+                    pointRadius: 0,
+                    spanGaps: true
                 },
                 {
                     label: 'P95 Latency (ms)',
@@ -187,7 +188,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     backgroundColor: 'transparent',
                     borderWidth: 2,
                     tension: 0.3,
-                    pointRadius: 0
+                    pointRadius: 0,
+                    spanGaps: true
                 },
                 {
                     label: 'P99 Corrected (ms)',
@@ -196,13 +198,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     backgroundColor: 'transparent',
                     borderWidth: 2,
                     tension: 0.3,
-                    pointRadius: 0
+                    pointRadius: 0,
+                    spanGaps: true
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: false,
             scales: {
                 x: {
                     grid: { color: 'rgba(255, 255, 255, 0.05)' },
@@ -236,13 +240,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     fill: true,
                     borderWidth: 2,
                     tension: 0.3,
-                    pointRadius: 0
+                    pointRadius: 0,
+                    spanGaps: true
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: false,
             scales: {
                 x: {
                     grid: { color: 'rgba(255, 255, 255, 0.05)' },
@@ -275,7 +281,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     backgroundColor: 'transparent',
                     borderWidth: 2,
                     tension: 0.3,
-                    yAxisID: 'y'
+                    yAxisID: 'y',
+                    spanGaps: true
                 },
                 {
                     label: 'P99 Latency (ms)',
@@ -284,7 +291,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     backgroundColor: 'transparent',
                     borderWidth: 2,
                     tension: 0.3,
-                    yAxisID: 'y'
+                    yAxisID: 'y',
+                    spanGaps: true
                 },
                 {
                     label: 'Error Rate (%)',
@@ -293,13 +301,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     backgroundColor: 'transparent',
                     borderWidth: 2,
                     tension: 0.3,
-                    yAxisID: 'y1'
+                    yAxisID: 'y1',
+                    spanGaps: true
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: false,
             scales: {
                 x: {
                     grid: { color: 'rgba(255, 255, 255, 0.05)' },
@@ -352,7 +362,8 @@ document.addEventListener('DOMContentLoaded', () => {
                     borderWidth: 2,
                     borderDash: [5, 5],
                     fill: true,
-                    tension: 0.1
+                    tension: 0.1,
+                    spanGaps: true
                 },
                 {
                     label: 'Active VU',
@@ -360,13 +371,15 @@ document.addEventListener('DOMContentLoaded', () => {
                     borderColor: '#10B981',
                     backgroundColor: 'transparent',
                     borderWidth: 3,
-                    tension: 0.3
+                    tension: 0.3,
+                    spanGaps: true
                 }
             ]
         },
         options: {
             responsive: true,
             maintainAspectRatio: false,
+            animation: false,
             scales: {
                 x: {
                     grid: { color: 'rgba(255, 255, 255, 0.05)' },
@@ -426,6 +439,35 @@ document.addEventListener('DOMContentLoaded', () => {
     function updateChartsData(seconds, activeVUs, p50Us, p95Us, p99Us, currentRps, errorRatePct) {
         const timeLabel = seconds + 's';
         
+        // If last element is the same second, overwrite it to prevent duplicate points and useless updates
+        if (chartLatency.data.labels.length > 0 && chartLatency.data.labels[chartLatency.data.labels.length - 1] === timeLabel) {
+            const lastIdx = chartLatency.data.labels.length - 1;
+            chartLatency.data.datasets[0].data[lastIdx] = p50Us / 1000;
+            chartLatency.data.datasets[1].data[lastIdx] = p95Us / 1000;
+            chartLatency.data.datasets[2].data[lastIdx] = p99Us / 1000;
+            chartLatency.update('none');
+
+            chartThroughput.data.datasets[0].data[lastIdx] = currentRps;
+            chartThroughput.update('none');
+
+            // Capacity chart labels are activeVUs
+            chartCapacity.data.datasets[0].data[lastIdx] = p95Us / 1000;
+            chartCapacity.data.datasets[1].data[lastIdx] = p99Us / 1000;
+            chartCapacity.data.datasets[2].data[lastIdx] = errorRatePct;
+            chartCapacity.update('none');
+
+            if (chartWorkload.data.labels.length > 0) {
+                const idx = seconds;
+                if (idx >= 0 && idx < chartWorkload.data.datasets[1].data.length) {
+                    chartWorkload.data.datasets[1].data[idx] = activeVUs;
+                } else {
+                    chartWorkload.data.datasets[1].data[idx] = activeVUs;
+                }
+                chartWorkload.update('none');
+            }
+            return;
+        }
+
         // Update Latency
         chartLatency.data.labels.push(timeLabel);
         chartLatency.data.datasets[0].data.push(p50Us / 1000);
@@ -435,7 +477,7 @@ document.addEventListener('DOMContentLoaded', () => {
             chartLatency.data.labels.shift();
             chartLatency.data.datasets.forEach(d => d.data.shift());
         }
-        chartLatency.update();
+        chartLatency.update('none');
 
         // Update Throughput
         chartThroughput.data.labels.push(timeLabel);
@@ -444,7 +486,7 @@ document.addEventListener('DOMContentLoaded', () => {
             chartThroughput.data.labels.shift();
             chartThroughput.data.datasets[0].data.shift();
         }
-        chartThroughput.update();
+        chartThroughput.update('none');
 
         // Update Capacity (VUs vs Latency & Errors)
         chartCapacity.data.labels.push(activeVUs);
@@ -455,7 +497,7 @@ document.addEventListener('DOMContentLoaded', () => {
             chartCapacity.data.labels.shift();
             chartCapacity.data.datasets.forEach(d => d.data.shift());
         }
-        chartCapacity.update();
+        chartCapacity.update('none');
 
         // Update Workload Profile
         if (chartWorkload.data.labels.length > 0) {
@@ -469,7 +511,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
                 chartWorkload.data.datasets[1].data[idx] = activeVUs;
             }
-            chartWorkload.update();
+            chartWorkload.update('none');
         }
     }
 
@@ -576,10 +618,13 @@ document.addEventListener('DOMContentLoaded', () => {
             case 'REQUEST_COMPLETED':
                 // Check if this was a Coordinated Omission backfilled request
                 const isCorrected = ev.payload.tags && ev.payload.tags.corrected === "true";
-                if (isCorrected) {
-                    appendTerminalLine(`[CO-CORRECTED] ${ev.payload.name} - ${formatLatency(ev.payload.latency_micro)}`, 'vu-msg');
-                } else {
-                    appendTerminalLine(`[SUCCESS] ${ev.payload.name} - ${formatLatency(ev.payload.latency_micro)} (HTTP ${ev.payload.status || 200})`, 'req-success');
+                // Only print 5% of successful requests to terminal to prevent browser CPU freeze under high load
+                if (Math.random() <= 0.05) {
+                    if (isCorrected) {
+                        appendTerminalLine(`[CO-CORRECTED] ${ev.payload.name} - ${formatLatency(ev.payload.latency_micro)}`, 'vu-msg');
+                    } else {
+                        appendTerminalLine(`[SUCCESS] ${ev.payload.name} - ${formatLatency(ev.payload.latency_micro)} (HTTP ${ev.payload.status || 200})`, 'req-success');
+                    }
                 }
                 break;
 
@@ -781,7 +826,9 @@ document.addEventListener('DOMContentLoaded', () => {
             });
 
             const data = await resp.json();
-            if (!resp.ok) {
+            if (resp.ok) {
+                navigateTo('dashboard');
+            } else {
                 appendTerminalLine(`Deployment Error: ${data.error}`, 'req-failed');
                 alert("Execution Failed: " + data.error);
             }
@@ -821,7 +868,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
     function renderHistory(runs) {
         if (!runs || runs.length === 0) {
-            historyTableBody.innerHTML = `<tr><td colspan="15" class="text-center">No runs recorded in SQLite yet. Deploy your first scenario!</td></tr>`;
+            historyTableBody.innerHTML = `<tr><td colspan="18" class="text-center">No runs recorded in SQLite yet. Deploy your first scenario!</td></tr>`;
             return;
         }
 
@@ -846,10 +893,51 @@ document.addEventListener('DOMContentLoaded', () => {
                     <td>${run.inflection_point} VU</td>
                     <td>${(run.saturation_index * 100).toFixed(0)}%</td>
                     <td>${date}</td>
+                    <td>
+                        <div style="display: flex; gap: 0.5rem; align-items: center;">
+                            <button class="btn btn-secondary" onclick="window.downloadReport('${run.run_id}')" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem; background: rgba(59, 130, 246, 0.15); border-color: rgba(59, 130, 246, 0.3); color: #93C5FD;" title="Download Report JSON">
+                                <svg style="width: 12px; height: 12px; fill: none; stroke: currentColor;" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+                                Report
+                            </button>
+                            <button class="btn btn-danger" onclick="window.deleteHistory('${run.run_id}')" style="padding: 0.25rem 0.5rem; font-size: 0.75rem; display: flex; align-items: center; gap: 0.25rem; background: rgba(239, 68, 68, 0.15); border-color: rgba(239, 68, 68, 0.3); color: #FCA5A5;" title="Delete Run History">
+                                <svg style="width: 12px; height: 12px; fill: none; stroke: currentColor;" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" /></svg>
+                                Delete
+                            </button>
+                        </div>
+                    </td>
                 </tr>
             `;
         }).join('');
     }
+
+    window.downloadReport = function(runId) {
+        window.location.href = `/api/history/report?run_id=${runId}`;
+    };
+
+    window.deleteHistory = async function(runId) {
+        if (!confirm(`Are you sure you want to delete run history for ID ${runId.substring(0, 8)}...? This will permanently wipe all series telemetry from database.`)) {
+            return;
+        }
+
+        try {
+            const resp = await fetch(`/api/history?run_id=${runId}`, {
+                method: 'DELETE'
+            });
+            if (resp.ok) {
+                await fetchHistory();
+                if (window.populateComparisonRuns) {
+                    await populateComparisonRuns();
+                }
+                appendTerminalLine(`Deleted run ${runId.substring(0, 8)}... from execution history.`, 'system-msg');
+            } else {
+                const data = await resp.json();
+                alert("Delete failed: " + data.error);
+            }
+        } catch (err) {
+            console.error("Delete connection error:", err);
+            alert("Failed to delete: " + err.message);
+        }
+    };
 
     // ==========================================================================
     // Run Comparison Engine Logic
@@ -1054,20 +1142,59 @@ document.addEventListener('DOMContentLoaded', () => {
         const val = e.target.value;
         if (!val) return;
         
+        let name = "Wizard HTTP Load Test";
         let proto = 'HTTP';
         let type = 'LOAD';
         let rps = 100, think = 500, peak = 1.5;
+        let httpMethod = 'GET';
+        let httpUrl = 'https://httpbin.org/get';
+        let httpHeaders = '';
+        let httpBody = '';
         
         switch (val) {
-            case 'login-api': rps = 50; think = 1000; type = 'LOAD'; break;
-            case 'search-api': rps = 300; think = 200; type = 'LOAD'; break;
-            case 'checkout-stress': rps = 200; think = 500; peak = 2.0; type = 'STRESS'; break;
-            case 'kafka-producer': rps = 1000; think = 10; proto = 'Kafka'; type = 'VOLUME'; break;
-            case 'kafka-consumer': rps = 500; think = 50; proto = 'Kafka'; type = 'LOAD'; break;
-            case 'db-bench': rps = 500; think = 50; proto = 'Database'; type = 'STRESS'; break;
-            case 'browser-audit': rps = 5; think = 5000; proto = 'Browser'; type = 'LOAD'; break;
+            case 'login-api':
+                name = 'Login API Load Test';
+                rps = 50; think = 1000; type = 'LOAD';
+                httpMethod = 'POST';
+                httpUrl = 'https://httpbin.org/post';
+                httpHeaders = '{\n  "Content-Type": "application/json"\n}';
+                httpBody = '{\n  "username": "user1",\n  "password": "password123"\n}';
+                break;
+            case 'search-api':
+                name = 'Search API Load Test';
+                rps = 300; think = 200; type = 'LOAD';
+                httpMethod = 'GET';
+                httpUrl = 'https://httpbin.org/get?q=vuelitycs';
+                httpHeaders = '{\n  "Accept": "application/json"\n}';
+                httpBody = '';
+                break;
+            case 'checkout-stress':
+                name = 'Checkout Stress Test';
+                rps = 200; think = 500; peak = 2.0; type = 'STRESS';
+                httpMethod = 'POST';
+                httpUrl = 'https://httpbin.org/post';
+                httpHeaders = '{\n  "Content-Type": "application/json",\n  "Authorization": "Bearer sample_token"\n}';
+                httpBody = '{\n  "cart_id": "cart_9988",\n  "items": [101, 102]\n}';
+                break;
+            case 'kafka-producer':
+                name = 'Kafka Producer Benchmark';
+                rps = 1000; think = 10; proto = 'Kafka'; type = 'VOLUME';
+                break;
+            case 'kafka-consumer':
+                name = 'Kafka Consumer Benchmark';
+                rps = 500; think = 50; proto = 'Kafka'; type = 'LOAD';
+                break;
+            case 'db-bench':
+                name = 'Database Benchmark';
+                rps = 500; think = 50; proto = 'Database'; type = 'STRESS';
+                break;
+            case 'browser-audit':
+                name = 'Browser Performance Audit';
+                rps = 5; think = 5000; proto = 'Browser'; type = 'LOAD';
+                break;
         }
         
+        document.getElementById('wiz-scenario-name').value = name;
         document.getElementById('wiz-target-rps').value = rps;
         document.getElementById('wiz-think-time').value = think;
         document.getElementById('wiz-peak-mult').value = peak;
@@ -1077,6 +1204,13 @@ document.addEventListener('DOMContentLoaded', () => {
         
         const tBtn = Array.from(groupWizType.querySelectorAll('.wizard-btn')).find(b => b.dataset.type === type);
         if (tBtn) tBtn.click();
+        
+        if (proto === 'HTTP') {
+            document.getElementById('wiz-http-method').value = httpMethod;
+            document.getElementById('wiz-http-url').value = httpUrl;
+            document.getElementById('wiz-http-headers').value = httpHeaders;
+            document.getElementById('wiz-http-body').value = httpBody;
+        }
         
         btnCalcWorkload.click();
     });
@@ -1094,36 +1228,266 @@ document.addEventListener('DOMContentLoaded', () => {
         document.getElementById('wiz-pacing').value = think;
         
         let dur = 60, ramp = 10;
+        let unit = 'sec';
         if (activeWizTestType === 'STRESS' || activeWizTestType === 'VOLUME') { dur = 120; ramp = 30; }
         else if (activeWizTestType === 'SPIKE') { dur = 30; ramp = 5; }
-        else if (activeWizTestType === 'SOAK') { dur = 600; ramp = 60; }
+        else if (activeWizTestType === 'SOAK') { dur = 10; ramp = 60; unit = 'min'; }
         
         document.getElementById('wiz-duration').value = dur;
+        document.getElementById('wiz-duration-unit').value = unit;
         document.getElementById('wiz-ramp-up').value = ramp;
         
         updatePreview();
     });
 
+    // JMeter Style Workload Profile Estimator Chart (bzam-concurrent user style)
+    function drawWorkloadProfile() {
+        const canvas = document.getElementById('wiz-workload-canvas');
+        if (!canvas) return;
+        const ctx = canvas.getContext('2d');
+        const width = canvas.width;
+        const height = canvas.height;
+
+        ctx.clearRect(0, 0, width, height);
+
+        const vus = parseInt(document.getElementById('wiz-vus').value) || 0;
+        const durInput = parseInt(document.getElementById('wiz-duration').value) || 0;
+        const durUnit = document.getElementById('wiz-duration-unit').value;
+        const dur = durUnit === 'min' ? durInput * 60 : durInput;
+        const ramp = parseInt(document.getElementById('wiz-ramp-up').value) || 0;
+
+        const padLeft = 55;
+        const padRight = 25;
+        const padTop = 25;
+        const padBottom = 30;
+        const graphW = width - padLeft - padRight;
+        const graphH = height - padTop - padBottom;
+
+        if (vus <= 0 || dur <= 0) {
+            ctx.fillStyle = '#9CA3AF';
+            ctx.font = '12px sans-serif';
+            ctx.textAlign = 'center';
+            ctx.textBaseline = 'middle';
+            ctx.fillText('Adjust Target VUs and Duration to visualize profile', width / 2, height / 2);
+            return;
+        }
+
+        // Draw dark grid lines and ticks matching ticks count
+        const xTicksCount = 5;
+        const yTicksCount = 4;
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.05)';
+        ctx.lineWidth = 1;
+        // Vertical grid lines
+        for (let i = 1; i < xTicksCount; i++) {
+            const ratio = i / xTicksCount;
+            const x = padLeft + ratio * graphW;
+            ctx.beginPath();
+            ctx.moveTo(x, padTop);
+            ctx.lineTo(x, height - padBottom);
+            ctx.stroke();
+        }
+        // Horizontal grid lines
+        for (let i = 1; i < yTicksCount; i++) {
+            const ratio = i / yTicksCount;
+            const y = padTop + (1.0 - ratio) * graphH;
+            ctx.beginPath();
+            ctx.moveTo(padLeft, y);
+            ctx.lineTo(padLeft + graphW, y);
+            ctx.stroke();
+        }
+
+        let points = [];
+        
+        switch (activeWizTestType) {
+            case 'LOAD':
+                const rampRatio = Math.min(ramp / dur, 0.8);
+                points.push({rX: 0, rY: 0});
+                points.push({rX: rampRatio, rY: 1});
+                points.push({rX: 0.95, rY: 1});
+                points.push({rX: 1.0, rY: 0});
+                break;
+
+            case 'STRESS':
+                points.push({rX: 0, rY: 0});
+                points.push({rX: 0.1, rY: 0.33});
+                points.push({rX: 0.3, rY: 0.33});
+                points.push({rX: 0.4, rY: 0.66});
+                points.push({rX: 0.6, rY: 0.66});
+                points.push({rX: 0.7, rY: 1.0});
+                points.push({rX: 0.95, rY: 1.0});
+                points.push({rX: 1.0, rY: 0});
+                break;
+
+            case 'SPIKE':
+                points.push({rX: 0, rY: 0});
+                points.push({rX: 0.1, rY: 1.0});
+                points.push({rX: 0.25, rY: 1.0});
+                points.push({rX: 0.35, rY: 0});
+                points.push({rX: 1.0, rY: 0});
+                break;
+
+            case 'SOAK':
+                points.push({rX: 0, rY: 0});
+                points.push({rX: 0.15, rY: 1.0});
+                points.push({rX: 0.9, rY: 1.0});
+                points.push({rX: 1.0, rY: 0});
+                break;
+
+            case 'VOLUME':
+                points.push({rX: 0, rY: 0});
+                points.push({rX: 0.25, rY: 1.0});
+                points.push({rX: 0.95, rY: 1.0});
+                points.push({rX: 1.0, rY: 0});
+                break;
+
+            case 'SCALABILITY':
+                points.push({rX: 0, rY: 0});
+                points.push({rX: 0.08, rY: 0.25});
+                points.push({rX: 0.23, rY: 0.25});
+                points.push({rX: 0.31, rY: 0.50});
+                points.push({rX: 0.46, rY: 0.50});
+                points.push({rX: 0.54, rY: 0.75});
+                points.push({rX: 0.69, rY: 0.75});
+                points.push({rX: 0.77, rY: 1.0});
+                points.push({rX: 0.95, rY: 1.0});
+                points.push({rX: 1.0, rY: 0});
+                break;
+                
+            default:
+                points.push({rX: 0, rY: 0});
+                points.push({rX: 0.2, rY: 1});
+                points.push({rX: 0.9, rY: 1});
+                points.push({rX: 1.0, rY: 0});
+        }
+
+        ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
+        ctx.lineWidth = 1.5;
+        ctx.beginPath();
+        ctx.moveTo(padLeft, padTop);
+        ctx.lineTo(padLeft, height - padBottom);
+        ctx.lineTo(width - padRight, height - padBottom);
+        ctx.stroke();
+
+        const coords = points.map(pt => {
+            return {
+                x: padLeft + pt.rX * graphW,
+                y: padTop + (1.0 - pt.rY) * graphH
+            };
+        });
+
+        ctx.beginPath();
+        ctx.moveTo(padLeft, height - padBottom);
+        coords.forEach(pt => ctx.lineTo(pt.x, pt.y));
+        ctx.lineTo(padLeft + graphW, height - padBottom);
+        ctx.closePath();
+        
+        const fillGradient = ctx.createLinearGradient(0, padTop, 0, height - padBottom);
+        fillGradient.addColorStop(0, 'rgba(16, 185, 129, 0.25)');
+        fillGradient.addColorStop(1, 'rgba(16, 185, 129, 0.0)');
+        ctx.fillStyle = fillGradient;
+        ctx.fill();
+
+        ctx.strokeStyle = '#10B981';
+        ctx.lineWidth = 3;
+        ctx.shadowColor = 'rgba(16, 185, 129, 0.5)';
+        ctx.shadowBlur = 8;
+        ctx.beginPath();
+        ctx.moveTo(coords[0].x, coords[0].y);
+        for (let i = 1; i < coords.length; i++) {
+            ctx.lineTo(coords[i].x, coords[i].y);
+        }
+        ctx.stroke();
+
+        ctx.shadowBlur = 0;
+
+        ctx.fillStyle = '#34D399';
+        coords.forEach(pt => {
+            ctx.beginPath();
+            ctx.arc(pt.x, pt.y, 4, 0, Math.PI * 2);
+            ctx.fill();
+        });
+
+        // Draw Y-axis VU labels & small tick marks
+        ctx.fillStyle = '#E5E7EB';
+        ctx.font = '10px monospace';
+        ctx.textAlign = 'right';
+        ctx.textBaseline = 'middle';
+        for (let i = 0; i <= yTicksCount; i++) {
+            const ratio = i / yTicksCount;
+            const vuVal = Math.round(vus * ratio);
+            const y = padTop + (1.0 - ratio) * graphH;
+            
+            // tick mark
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.moveTo(padLeft - 4, y);
+            ctx.lineTo(padLeft, y);
+            ctx.stroke();
+
+            ctx.fillText(vuVal + ' VU', padLeft - 8, y);
+        }
+
+        // Draw X-axis Time labels & small tick marks
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'top';
+        for (let i = 0; i <= xTicksCount; i++) {
+            const ratio = i / xTicksCount;
+            const tVal = Math.round(dur * ratio);
+            const x = padLeft + ratio * graphW;
+
+            // tick mark
+            ctx.strokeStyle = 'rgba(255, 255, 255, 0.3)';
+            ctx.beginPath();
+            ctx.moveTo(x, height - padBottom);
+            ctx.lineTo(x, height - padBottom + 4);
+            ctx.stroke();
+
+            let label = tVal + 's';
+            if (tVal >= 60) {
+                const mins = (tVal / 60).toFixed(1).replace('.0', '');
+                label = `${tVal}s (${mins}m)`;
+            }
+            ctx.fillText(label, x, height - padBottom + 6);
+        }
+
+        ctx.fillStyle = '#10B981';
+        ctx.font = 'bold 11px sans-serif';
+        ctx.textAlign = 'left';
+        ctx.fillText(`${activeWizTestType} Profile Workload Model`, padLeft + 10, padTop + 2);
+    }
+
     // Epic 4: Scenario Preview
     function updatePreview() {
         const vus = document.getElementById('wiz-vus').value || 0;
-        const dur = document.getElementById('wiz-duration').value || 0;
+        const durInput = document.getElementById('wiz-duration').value || 0;
+        const durUnit = document.getElementById('wiz-duration-unit').value;
+        const dur = durUnit === 'min' ? durInput * 60 : durInput;
         const ramp = document.getElementById('wiz-ramp-up').value || 0;
         const pacing = document.getElementById('wiz-pacing').value || 100;
         const estPeakRPS = Math.round((vus / (pacing / 1000)));
         const hasSla = document.getElementById('wiz-sla-p95').value || document.getElementById('wiz-sla-error').value;
+        const scenName = document.getElementById('wiz-scenario-name').value || "Wizard Generated Test";
         
-        const previewText = `• Protocol: ${activeWizProtocol}
+        const previewText = `• Scenario Name: ${scenName}
+• Protocol: ${activeWizProtocol}
 • Test Type: ${activeWizTestType}
-• Workload: Ramps to ${vus} VUs over ${ramp}s, holds for ${dur}s.
+• Workload: Ramps to ${vus} VUs over ${ramp}s, holds for ${dur}s (${durUnit === 'min' ? durInput + 'm' : durInput + 's'}).
 • Estimated Peak RPS: ~${estPeakRPS} req/sec
 • SLAs Configured: ${hasSla ? 'Yes' : 'No'}`;
 
         const previewEl = document.getElementById('wiz-preview-text');
         if(previewEl) previewEl.textContent = previewText;
+
+        // Draw profile estimate graph
+        drawWorkloadProfile();
     }
 
-    document.querySelectorAll('.wizard-input-field').forEach(el => el.addEventListener('input', updatePreview));
+    // Capture input updates for all inputs
+    document.querySelectorAll('.wizard-input-field').forEach(el => {
+        el.addEventListener('input', updatePreview);
+        el.addEventListener('change', updatePreview);
+    });
     groupWizProtocol.addEventListener('click', updatePreview);
     groupWizType.addEventListener('click', updatePreview);
     
@@ -1131,8 +1495,11 @@ document.addEventListener('DOMContentLoaded', () => {
     updatePreview();
 
     btnWizGenerate.addEventListener('click', async () => {
+        const scenName = document.getElementById('wiz-scenario-name').value || `Wizard ${activeWizProtocol} ${activeWizTestType} Test`;
         const vus = parseInt(document.getElementById('wiz-vus').value) || 10;
-        const duration = parseInt(document.getElementById('wiz-duration').value) || 15;
+        const durInput = parseInt(document.getElementById('wiz-duration').value) || 15;
+        const durUnit = document.getElementById('wiz-duration-unit').value;
+        const duration = durUnit === 'min' ? durInput * 60 : durInput;
         const rampUp = parseInt(document.getElementById('wiz-ramp-up').value) || 3;
         const pacing = parseInt(document.getElementById('wiz-pacing').value) || 100;
 
@@ -1140,7 +1507,25 @@ document.addEventListener('DOMContentLoaded', () => {
         if (activeWizProtocol === 'HTTP') {
             configObj.method = document.getElementById('wiz-http-method').value;
             configObj.url = document.getElementById('wiz-http-url').value;
-            configObj.headers = { "User-Agent": "Vuelitycs-Platform/2.0" };
+            
+            // Parse headers
+            const headersVal = document.getElementById('wiz-http-headers').value.trim();
+            if (headersVal) {
+                try {
+                    configObj.headers = JSON.parse(headersVal);
+                } catch (e) {
+                    alert("Headers must be valid JSON format: " + e.message);
+                    return;
+                }
+            } else {
+                configObj.headers = { "User-Agent": "Vuelitycs-Platform/2.0" };
+            }
+
+            // Message Body
+            const bodyVal = document.getElementById('wiz-http-body').value.trim();
+            if (bodyVal) {
+                configObj.body = bodyVal;
+            }
         } else if (activeWizProtocol === 'Browser') {
             configObj.url = document.getElementById('wiz-browser-url').value;
             configObj.timeout_ms = 15000;
@@ -1176,7 +1561,7 @@ document.addEventListener('DOMContentLoaded', () => {
         };
 
         const payload = {
-            name: `Wizard ${activeWizProtocol} ${activeWizTestType} Test`,
+            name: scenName,
             protocol: activeWizProtocol,
             test_type: activeWizTestType,
             vus: vus,
@@ -1199,8 +1584,12 @@ document.addEventListener('DOMContentLoaded', () => {
             if (resp.ok) {
                 txtDsl.value = JSON.stringify(scen, null, 2);
                 appendTerminalLine(`Generated scenario config using Wizard and loaded to editor.`, 'system-msg');
-                // Navigate back to dashboard
-                navigateTo('dashboard');
+                const specCard = document.querySelector('.config-card');
+                if (specCard) {
+                    specCard.classList.remove('flash-highlight');
+                    void specCard.offsetWidth;
+                    specCard.classList.add('flash-highlight');
+                }
             } else {
                 alert("Failed to generate: " + scen.error);
             }

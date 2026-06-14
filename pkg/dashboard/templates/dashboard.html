@@ -120,6 +120,10 @@
             outline: none;
             border-color: var(--color-purple);
         }
+        .wizard-input-field option, select option {
+            background-color: #12131C;
+            color: var(--text-main);
+        }
         .border-success {
             border-color: var(--color-success) !important;
         }
@@ -128,6 +132,14 @@
         }
         .border-critical {
             border-color: var(--color-error) !important;
+        }
+        @keyframes pulse-border {
+            0% { border-color: var(--border-glass); box-shadow: 0 0 0 rgba(139, 92, 246, 0); }
+            50% { border-color: var(--color-primary); box-shadow: 0 0 15px rgba(139, 92, 246, 0.4); }
+            100% { border-color: var(--border-glass); box-shadow: 0 0 0 rgba(139, 92, 246, 0); }
+        }
+        .flash-highlight {
+            animation: pulse-border 1.2s ease-in-out;
         }
     </style>
 </head>
@@ -192,60 +204,10 @@
             </header>
 
             <!-- Primary Dashboard Panel -->
-            <div class="dashboard-grid" id="panel-dashboard">
+            <div class="dashboard-telemetry-full" id="panel-dashboard">
                 
-                <!-- Left Configuration Column -->
-                <section class="grid-col-config">
-                    <div class="card glass-card config-card">
-                        <div class="card-header">
-                            <h2 class="card-title">Scenario Specification</h2>
-                            <span class="badge badge-purple">DSL Spec</span>
-                        </div>
-                        <div class="card-body">
-                            <div class="code-editor-wrapper">
-                                <textarea id="txt-scenario-dsl" spellcheck="false" class="code-editor">
-{
-  "name": "HTTP Core Load Run",
-  "protocol": "HTTP",
-  "vus": 15,
-  "duration_seconds": 20,
-  "ramp_up_seconds": 4,
-  "pacing_ms": 150,
-  "test_type": "LOAD",
-  "config": {
-    "url": "https://httpbin.org/get",
-    "method": "GET",
-    "headers": {
-      "User-Agent": "Vuelitycs-Platform/2.0"
-    }
-  }
-}</textarea>
-                            </div>
-                            
-                            <!-- Epic 6: Scenario Management -->
-                            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; margin-top: 0.5rem;">
-                                <select id="select-saved-scenarios" class="wizard-input-field" style="flex: 1; padding: 0.4rem; font-size: 0.8rem; background: rgba(255,255,255,0.05);"></select>
-                                <button class="btn btn-secondary" id="btn-scen-load" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">Load</button>
-                                <button class="btn btn-secondary" id="btn-scen-save" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">Save</button>
-                                <button class="btn btn-secondary" id="btn-scen-duplicate" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;" title="Duplicate Scenario">Copy</button>
-                            </div>
-
-                            <div class="editor-actions">
-                                <button class="btn btn-primary btn-full" id="btn-start-test">
-                                    <svg class="btn-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
-                                    Deploy & Start Test
-                                </button>
-                                <button class="btn btn-danger btn-full hide" id="btn-stop-test">
-                                    <svg class="btn-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
-                                    Abort Execution
-                                </button>
-                            </div>
-                        </div>
-                    </div>
-                </section>
-
                 <!-- Right Execution & Telemetry Column -->
-                <section class="grid-col-telemetry">
+                <section class="grid-col-telemetry" style="width: 100%;">
                     
                     <!-- Live Overview Section -->
                     <div class="card glass-card">
@@ -612,11 +574,12 @@
                                         <th>Inflection</th>
                                         <th>Saturation</th>
                                         <th>Timestamp</th>
+                                        <th style="min-width: 150px;">Actions</th>
                                     </tr>
                                 </thead>
                                 <tbody id="history-table-body">
                                     <tr>
-                                        <td colspan="14" class="text-center">No runs recorded in SQLite. Deploy a scenario to begin.</td>
+                                        <td colspan="18" class="text-center">No runs recorded in SQLite. Deploy a scenario to begin.</td>
                                     </tr>
                                 </tbody>
                             </table>
@@ -757,232 +720,308 @@
 
             <!-- Scenario Wizard Panel -->
             <div class="history-container hide" id="panel-wizard">
-                <div class="card glass-card full-card">
-                    <div class="card-header">
-                        <h2 class="card-title">Scenario Wizard Builder</h2>
-                        <span class="badge badge-purple">Generate DSL</span>
-                    </div>
-                    <div class="card-body">
-                        <div class="wizard-steps">
-                            <!-- Step 0: Templates -->
-                            <div class="wizard-step">
-                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Template Library</h3>
-                                <select id="wiz-template" class="wizard-input-field" style="background: rgba(0,0,0,0.2);">
-                                    <option value="">-- Custom Build --</option>
-                                    <option value="login-api">Login API Load Test</option>
-                                    <option value="search-api">Search API Load Test</option>
-                                    <option value="checkout-stress">Checkout Stress Test</option>
-                                    <option value="kafka-producer">Kafka Producer Benchmark</option>
-                                    <option value="kafka-consumer">Kafka Consumer Benchmark</option>
-                                    <option value="db-bench">Database Benchmark</option>
-                                    <option value="browser-audit">Browser Performance Audit</option>
-                                </select>
-                            </div>
-
-                            <!-- Step 1 -->
-                            <div class="wizard-step">
-                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 1: Protocol Selection</h3>
-                                <div class="wizard-btn-group" id="group-wiz-protocol">
-                                    <button class="wizard-btn active" data-protocol="HTTP">HTTP Protocol</button>
-                                    <button class="wizard-btn" data-protocol="Browser">Browser Vitals (CDP)</button>
-                                    <button class="wizard-btn" data-protocol="Kafka">Kafka Broker</button>
-                                    <button class="wizard-btn" data-protocol="Database">Database Query</button>
+                <div class="wizard-grid">
+                    <!-- Left Column: Scenario Wizard Builder -->
+                    <div class="card glass-card">
+                        <div class="card-header">
+                            <h2 class="card-title">Scenario Wizard Builder</h2>
+                            <span class="badge badge-purple">Generate DSL</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="wizard-steps">
+                                <!-- Scenario Name input -->
+                                <div class="wizard-step">
+                                    <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Scenario Name</h3>
+                                    <input type="text" id="wiz-scenario-name" class="wizard-input-field" value="Wizard HTTP Load Test" placeholder="e.g. User Auth Stress Test" style="background: rgba(0,0,0,0.2);">
                                 </div>
-                            </div>
 
-                            <!-- Step 2 -->
-                            <div class="wizard-step">
-                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 2: Test Profile</h3>
-                                <div class="wizard-btn-group" id="group-wiz-type">
-                                    <button class="wizard-btn active" data-type="LOAD">Load Test</button>
-                                    <button class="wizard-btn" data-type="STRESS">Stress Test</button>
-                                    <button class="wizard-btn" data-type="SPIKE">Spike Test</button>
-                                    <button class="wizard-btn" data-type="SOAK">Soak Test</button>
-                                    <button class="wizard-btn" data-type="VOLUME">Volume Test</button>
-                                    <button class="wizard-btn" data-type="SCALABILITY">Scalability Test</button>
+                                <!-- Step 0: Templates -->
+                                <div class="wizard-step">
+                                    <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Template Library</h3>
+                                    <select id="wiz-template" class="wizard-input-field" style="background: rgba(0,0,0,0.2);">
+                                        <option value="">-- Custom Build --</option>
+                                        <option value="login-api">Login API Load Test</option>
+                                        <option value="search-api">Search API Load Test</option>
+                                        <option value="checkout-stress">Checkout Stress Test</option>
+                                        <option value="kafka-producer">Kafka Producer Benchmark</option>
+                                        <option value="kafka-consumer">Kafka Consumer Benchmark</option>
+                                        <option value="db-bench">Database Benchmark</option>
+                                        <option value="browser-audit">Browser Performance Audit</option>
+                                    </select>
                                 </div>
-                            </div>
 
-                            <!-- Step 3A -->
-                            <div class="wizard-step">
-                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 3A: Business Targets (Auto-Calculator)</h3>
-                                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Target RPS</label>
-                                        <input type="number" id="wiz-target-rps" class="wizard-input-field" value="100">
-                                    </div>
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Think Time (ms)</label>
-                                        <input type="number" id="wiz-think-time" class="wizard-input-field" value="500">
-                                    </div>
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Peak Multiplier</label>
-                                        <input type="number" id="wiz-peak-mult" class="wizard-input-field" value="1.5" step="0.1">
-                                    </div>
-                                    <div style="display: flex; align-items: flex-end;">
-                                        <button class="btn btn-secondary" id="btn-calc-workload" style="width: 100%;">Calculate Workload</button>
+                                <!-- Step 1 -->
+                                <div class="wizard-step">
+                                    <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 1: Protocol Selection</h3>
+                                    <div class="wizard-btn-group" id="group-wiz-protocol">
+                                        <button class="wizard-btn active" data-protocol="HTTP">HTTP Protocol</button>
+                                        <button class="wizard-btn" data-protocol="Browser">Browser Vitals (CDP)</button>
+                                        <button class="wizard-btn" data-protocol="Kafka">Kafka Broker</button>
+                                        <button class="wizard-btn" data-protocol="Database">Database Query</button>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Step 3B -->
-                            <div class="wizard-step">
-                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 3B: Generated Workload Parameters</h3>
-                                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Target VUs</label>
-                                        <input type="number" id="wiz-vus" class="wizard-input-field" value="50">
-                                    </div>
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Duration (sec)</label>
-                                        <input type="number" id="wiz-duration" class="wizard-input-field" value="60">
-                                    </div>
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Ramp Up (sec)</label>
-                                        <input type="number" id="wiz-ramp-up" class="wizard-input-field" value="10">
-                                    </div>
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Pacing (ms)</label>
-                                        <input type="number" id="wiz-pacing" class="wizard-input-field" value="500">
+                                <!-- Step 2 -->
+                                <div class="wizard-step">
+                                    <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 2: Test Profile</h3>
+                                    <div class="wizard-btn-group" id="group-wiz-type">
+                                        <button class="wizard-btn active" data-type="LOAD">Load Test</button>
+                                        <button class="wizard-btn" data-type="STRESS">Stress Test</button>
+                                        <button class="wizard-btn" data-type="SPIKE">Spike Test</button>
+                                        <button class="wizard-btn" data-type="SOAK">Soak Test</button>
+                                        <button class="wizard-btn" data-type="VOLUME">Volume Test</button>
+                                        <button class="wizard-btn" data-type="SCALABILITY">Scalability Test</button>
                                     </div>
                                 </div>
-                            </div>
 
-                            <!-- Protocol Config -->
-                            <div class="wizard-step" id="wiz-proto-config">
-                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 4: Protocol Details</h3>
-                                
-                                <!-- HTTP Options -->
-                                <div id="wiz-opt-http" class="wiz-proto-opt">
-                                    <div style="display: grid; grid-template-columns: 1fr 3fr; gap: 1rem;">
+                                <!-- Step 3A -->
+                                <div class="wizard-step">
+                                    <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 3A: Business Targets (Auto-Calculator)</h3>
+                                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
                                         <div>
-                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Method</label>
-                                            <select id="wiz-http-method" class="wizard-input-field" style="background: rgba(0,0,0,0.2);">
-                                                <option value="GET">GET</option>
-                                                <option value="POST">POST</option>
-                                                <option value="PUT">PUT</option>
-                                                <option value="DELETE">DELETE</option>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Target RPS</label>
+                                            <input type="number" id="wiz-target-rps" class="wizard-input-field" value="100">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Think Time (ms)</label>
+                                            <input type="number" id="wiz-think-time" class="wizard-input-field" value="500">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Peak Multiplier</label>
+                                            <input type="number" id="wiz-peak-mult" class="wizard-input-field" value="1.5" step="0.1">
+                                        </div>
+                                        <div style="display: flex; align-items: flex-end;">
+                                            <button class="btn btn-secondary" id="btn-calc-workload" style="width: 100%;">Calculate Workload</button>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 3B -->
+                                <div class="wizard-step">
+                                    <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 3B: Generated Workload Parameters</h3>
+                                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Target VUs</label>
+                                            <input type="number" id="wiz-vus" class="wizard-input-field" value="50">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Duration</label>
+                                            <div style="display: flex; gap: 0.25rem;">
+                                                <input type="number" id="wiz-duration" class="wizard-input-field" value="60" style="flex: 2; min-width: 0;">
+                                                <select id="wiz-duration-unit" class="wizard-input-field" style="flex: 1; background: rgba(0,0,0,0.2); padding: 0.4rem 0.2rem; min-width: 55px; font-size: 0.8rem;">
+                                                    <option value="sec">sec</option>
+                                                    <option value="min">min</option>
+                                                </select>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Ramp Up (sec)</label>
+                                            <input type="number" id="wiz-ramp-up" class="wizard-input-field" value="10">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Pacing (ms)</label>
+                                            <input type="number" id="wiz-pacing" class="wizard-input-field" value="500">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Protocol Config -->
+                                <div class="wizard-step" id="wiz-proto-config">
+                                    <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 4: Protocol Details</h3>
+                                    
+                                    <!-- HTTP Options -->
+                                    <div id="wiz-opt-http" class="wiz-proto-opt">
+                                        <div style="display: grid; grid-template-columns: 1fr 3fr; gap: 1rem;">
+                                            <div>
+                                                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Method</label>
+                                                <select id="wiz-http-method" class="wizard-input-field" style="background: rgba(0,0,0,0.2);">
+                                                    <option value="GET">GET</option>
+                                                    <option value="POST">POST</option>
+                                                    <option value="PUT">PUT</option>
+                                                    <option value="DELETE">DELETE</option>
+                                                </select>
+                                            </div>
+                                            <div>
+                                                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Target URL</label>
+                                                <input type="text" id="wiz-http-url" class="wizard-input-field" value="https://httpbin.org/get">
+                                            </div>
+                                        </div>
+                                        <div style="margin-top: 1rem; display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                            <div>
+                                                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Headers (JSON format)</label>
+                                                <textarea id="wiz-http-headers" class="wizard-input-field" style="height: 80px; font-family: monospace; resize: vertical; background: rgba(0,0,0,0.2);" placeholder='{"Content-Type": "application/json"}'></textarea>
+                                            </div>
+                                            <div>
+                                                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Message Body</label>
+                                                <textarea id="wiz-http-body" class="wizard-input-field" style="height: 80px; font-family: monospace; resize: vertical; background: rgba(0,0,0,0.2);" placeholder='{"key": "value"}'></textarea>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Browser Options -->
+                                    <div id="wiz-opt-browser" class="wiz-proto-opt hide">
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Browser Target URL</label>
+                                            <input type="text" id="wiz-browser-url" class="wizard-input-field" value="https://example.com">
+                                        </div>
+                                    </div>
+
+                                    <!-- Kafka Options -->
+                                    <div id="wiz-opt-kafka" class="wiz-proto-opt hide">
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                            <div>
+                                                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Kafka Brokers</label>
+                                                <input type="text" id="wiz-kafka-brokers" class="wizard-input-field" value="localhost:9092">
+                                            </div>
+                                            <div>
+                                                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Topic</label>
+                                                <input type="text" id="wiz-kafka-topic" class="wizard-input-field" value="vuelitycs-events">
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    <!-- Database Options -->
+                                    <div id="wiz-opt-database" class="wiz-proto-opt hide">
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 1rem;">
+                                            <div>
+                                                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Driver</label>
+                                                <input type="text" id="wiz-db-driver" class="wizard-input-field" value="sqlite">
+                                            </div>
+                                            <div>
+                                                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">DSN / Connection String</label>
+                                                <input type="text" id="wiz-db-dsn" class="wizard-input-field" value="vuelitycs.db">
+                                            </div>
+                                            <div>
+                                                <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">SQL Query</label>
+                                                <input type="text" id="wiz-db-query" class="wizard-input-field" value="SELECT 1">
+                                            </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 5: SLA Thresholds -->
+                                <div class="wizard-step">
+                                    <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 5: SLA Thresholds</h3>
+                                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">P95 Latency (ms)</label>
+                                            <input type="number" id="wiz-sla-p95" class="wizard-input-field" placeholder="e.g. 500">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">P99 Latency (ms)</label>
+                                            <input type="number" id="wiz-sla-p99" class="wizard-input-field" placeholder="e.g. 1000">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Max Error Rate (%)</label>
+                                            <input type="number" id="wiz-sla-error" class="wizard-input-field" placeholder="e.g. 1.0" step="0.1">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Min Throughput (RPS)</label>
+                                            <input type="number" id="wiz-sla-rps" class="wizard-input-field" placeholder="e.g. 90">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 6: Metadata & Release Tracking -->
+                                <div class="wizard-step">
+                                    <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 6: Release Metadata (Optional)</h3>
+                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem;">
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Environment</label>
+                                            <select id="wiz-meta-env" class="wizard-input-field" style="background: rgba(0,0,0,0.2);">
+                                                <option value="">-- Select --</option>
+                                                <option value="DEV">Development</option>
+                                                <option value="STAGING">Staging</option>
+                                                <option value="PROD">Production</option>
                                             </select>
                                         </div>
                                         <div>
-                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Target URL</label>
-                                            <input type="text" id="wiz-http-url" class="wizard-input-field" value="https://httpbin.org/get">
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">App Version</label>
+                                            <input type="text" id="wiz-meta-version" class="wizard-input-field" placeholder="e.g. v2.4.1">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Release Tag</label>
+                                            <input type="text" id="wiz-meta-tag" class="wizard-input-field" placeholder="e.g. sprint-3-rc1">
+                                        </div>
+                                    </div>
+                                    <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Build Number</label>
+                                            <input type="text" id="wiz-meta-build" class="wizard-input-field" placeholder="e.g. #1084">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Executed By</label>
+                                            <input type="text" id="wiz-meta-user" class="wizard-input-field" placeholder="User identity">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Notes</label>
+                                            <input type="text" id="wiz-meta-notes" class="wizard-input-field" placeholder="Test summary">
                                         </div>
                                     </div>
                                 </div>
 
-                                <!-- Browser Options -->
-                                <div id="wiz-opt-browser" class="wiz-proto-opt hide">
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Browser Target URL</label>
-                                        <input type="text" id="wiz-browser-url" class="wizard-input-field" value="https://example.com">
+                                <!-- Step 7: Scenario Preview & Workload Profile Chart -->
+                                <div class="wizard-step" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2);">
+                                    <h3 style="font-size: 1rem; color: #10B981; margin-bottom: 0.75rem;">Step 7: Scenario Workload Profile (JMeter bzam-concurrent user Style)</h3>
+                                    <div style="position: relative; margin-bottom: 1rem;">
+                                        <canvas id="wiz-workload-canvas" width="700" height="260" style="width: 100%; height: 220px; background: rgba(15, 23, 42, 0.6); border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3); display: block;"></canvas>
                                     </div>
+                                    <p id="wiz-preview-text" style="font-size: 0.85rem; color: #9CA3AF; line-height: 1.5; margin: 0; white-space: pre-wrap;">
+                                        Configure workload to see projections.
+                                    </p>
                                 </div>
 
-                                <!-- Kafka Options -->
-                                <div id="wiz-opt-kafka" class="wiz-proto-opt hide">
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
-                                        <div>
-                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Kafka Brokers</label>
-                                            <input type="text" id="wiz-kafka-brokers" class="wizard-input-field" value="localhost:9092">
-                                        </div>
-                                        <div>
-                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Topic</label>
-                                            <input type="text" id="wiz-kafka-topic" class="wizard-input-field" value="vuelitycs-events">
-                                        </div>
-                                    </div>
-                                </div>
-
-                                <!-- Database Options -->
-                                <div id="wiz-opt-database" class="wiz-proto-opt hide">
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr 2fr; gap: 1rem;">
-                                        <div>
-                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Driver</label>
-                                            <input type="text" id="wiz-db-driver" class="wizard-input-field" value="sqlite">
-                                        </div>
-                                        <div>
-                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">DSN / Connection String</label>
-                                            <input type="text" id="wiz-db-dsn" class="wizard-input-field" value="vuelitycs.db">
-                                        </div>
-                                        <div>
-                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">SQL Query</label>
-                                            <input type="text" id="wiz-db-query" class="wizard-input-field" value="SELECT 1">
-                                        </div>
-                                    </div>
+                                <div style="margin-top: 2rem;">
+                                    <button class="btn btn-primary" id="btn-wizard-generate" style="padding: 0.8rem 2rem;">Generate & Load Scenario</button>
                                 </div>
                             </div>
+                        </div>
+                    </div>
 
-                            <!-- Step 5: SLA Thresholds -->
-                            <div class="wizard-step">
-                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 5: SLA Thresholds</h3>
-                                <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">P95 Latency (ms)</label>
-                                        <input type="number" id="wiz-sla-p95" class="wizard-input-field" placeholder="e.g. 500">
-                                    </div>
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">P99 Latency (ms)</label>
-                                        <input type="number" id="wiz-sla-p99" class="wizard-input-field" placeholder="e.g. 1000">
-                                    </div>
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Max Error Rate (%)</label>
-                                        <input type="number" id="wiz-sla-error" class="wizard-input-field" placeholder="e.g. 1.0" step="0.1">
-                                    </div>
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Min Throughput (RPS)</label>
-                                        <input type="number" id="wiz-sla-rps" class="wizard-input-field" placeholder="e.g. 90">
-                                    </div>
-                                </div>
+                    <!-- Right Column: Scenario Specification (DSL Editor & Controller) -->
+                    <div class="card glass-card config-card" style="position: sticky; top: 2.5rem;">
+                        <div class="card-header">
+                            <h2 class="card-title">Scenario Specification</h2>
+                            <span class="badge badge-purple">DSL Spec</span>
+                        </div>
+                        <div class="card-body">
+                            <div class="code-editor-wrapper">
+                                <textarea id="txt-scenario-dsl" spellcheck="false" class="code-editor" style="height: 380px;">
+{
+  "name": "HTTP Core Load Run",
+  "protocol": "HTTP",
+  "vus": 15,
+  "duration_seconds": 20,
+  "ramp_up_seconds": 4,
+  "pacing_ms": 150,
+  "test_type": "LOAD",
+  "config": {
+    "url": "https://httpbin.org/get",
+    "method": "GET",
+    "headers": {
+      "User-Agent": "Vuelitycs-Platform/2.0"
+    }
+  }
+}</textarea>
+                            </div>
+                            
+                            <!-- Scenario Management -->
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; margin-top: 0.5rem;">
+                                <select id="select-saved-scenarios" class="wizard-input-field" style="flex: 1; padding: 0.4rem; font-size: 0.8rem; background: rgba(255,255,255,0.05);"></select>
+                                <button class="btn btn-secondary" id="btn-scen-load" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">Load</button>
+                                <button class="btn btn-secondary" id="btn-scen-save" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">Save</button>
+                                <button class="btn btn-secondary" id="btn-scen-duplicate" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;" title="Duplicate Scenario">Copy</button>
                             </div>
 
-                            <!-- Step 6: Metadata & Release Tracking -->
-                            <div class="wizard-step">
-                                <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 6: Release Metadata (Optional)</h3>
-                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem; margin-bottom: 1rem;">
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Environment</label>
-                                        <select id="wiz-meta-env" class="wizard-input-field" style="background: rgba(0,0,0,0.2);">
-                                            <option value="">-- Select --</option>
-                                            <option value="DEV">Development</option>
-                                            <option value="STAGING">Staging</option>
-                                            <option value="PROD">Production</option>
-                                        </select>
-                                    </div>
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">App Version</label>
-                                        <input type="text" id="wiz-meta-version" class="wizard-input-field" placeholder="e.g. v2.4.1">
-                                    </div>
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Release Tag</label>
-                                        <input type="text" id="wiz-meta-tag" class="wizard-input-field" placeholder="e.g. sprint-3-rc1">
-                                    </div>
-                                </div>
-                                <div style="display: grid; grid-template-columns: repeat(3, 1fr); gap: 1rem;">
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Build Number</label>
-                                        <input type="text" id="wiz-meta-build" class="wizard-input-field" placeholder="e.g. #1084">
-                                    </div>
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Executed By</label>
-                                        <input type="text" id="wiz-meta-user" class="wizard-input-field" placeholder="User identity">
-                                    </div>
-                                    <div>
-                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Notes</label>
-                                        <input type="text" id="wiz-meta-notes" class="wizard-input-field" placeholder="Test summary">
-                                    </div>
-                                </div>
-                            </div>
-
-                            <!-- Step 7: Scenario Preview -->
-                            <div class="wizard-step" style="background: rgba(16, 185, 129, 0.05); border-color: rgba(16, 185, 129, 0.2);">
-                                <h3 style="font-size: 1rem; color: #10B981; margin-bottom: 0.75rem;">Step 7: Scenario Projection Preview</h3>
-                                <p id="wiz-preview-text" style="font-size: 0.85rem; color: #9CA3AF; line-height: 1.5; margin: 0; white-space: pre-wrap;">
-                                    Configure workload to see projections.
-                                </p>
-                            </div>
-
-                            <div style="margin-top: 2rem;">
-                                <button class="btn btn-primary" id="btn-wizard-generate" style="padding: 0.8rem 2rem;">Generate & Load Scenario</button>
+                            <div class="editor-actions">
+                                <button class="btn btn-primary btn-full" id="btn-start-test">
+                                    <svg class="btn-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z"></path></svg>
+                                    Deploy & Start Test
+                                </button>
+                                <button class="btn btn-danger btn-full hide" id="btn-stop-test">
+                                    <svg class="btn-icon" fill="currentColor" viewBox="0 0 24 24"><path d="M6 19h4V5H6v14zm8-14v14h4V5h-4z"></path></svg>
+                                    Abort Execution
+                                </button>
                             </div>
                         </div>
                     </div>

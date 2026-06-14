@@ -391,6 +391,21 @@ body {
     align-items: start;
 }
 
+.dashboard-telemetry-full {
+    display: flex;
+    flex-direction: column;
+    gap: 2.5rem;
+    width: 100%;
+}
+
+.wizard-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr;
+    gap: 2.5rem;
+    align-items: start;
+    width: 100%;
+}
+
 .grid-col-config {
     display: flex;
     flex-direction: column;
