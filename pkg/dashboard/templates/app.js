@@ -1140,7 +1140,11 @@ document.addEventListener('DOMContentLoaded', () => {
     const wizTemplate = document.getElementById('wiz-template');
     wizTemplate.addEventListener('change', (e) => {
         const val = e.target.value;
-        if (!val) return;
+        const metaDiv = document.getElementById('wiz-template-meta');
+        if (!val) {
+            if (metaDiv) metaDiv.classList.add('hide');
+            return;
+        }
         
         let name = "Wizard HTTP Load Test";
         let proto = 'HTTP';
@@ -1150,6 +1154,14 @@ document.addEventListener('DOMContentLoaded', () => {
         let httpUrl = 'https://httpbin.org/get';
         let httpHeaders = '';
         let httpBody = '';
+
+        let meta = {
+            title: "-",
+            purpose: "-",
+            suitable: "-",
+            runtime: "-",
+            env: "-"
+        };
         
         switch (val) {
             case 'login-api':
@@ -1159,6 +1171,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 httpUrl = 'https://httpbin.org/post';
                 httpHeaders = '{\n  "Content-Type": "application/json"\n}';
                 httpBody = '{\n  "username": "user1",\n  "password": "password123"\n}';
+                meta = {
+                    title: "Login API Load Test Template",
+                    purpose: "Validate authentication service resilience under concurrent user requests.",
+                    suitable: "Single API endpoint performance verification.",
+                    runtime: "5 minutes",
+                    env: "STAGING / PRE-PROD"
+                };
                 break;
             case 'search-api':
                 name = 'Search API Load Test';
@@ -1167,6 +1186,13 @@ document.addEventListener('DOMContentLoaded', () => {
                 httpUrl = 'https://httpbin.org/get?q=vuelitycs';
                 httpHeaders = '{\n  "Accept": "application/json"\n}';
                 httpBody = '';
+                meta = {
+                    title: "Search API Load Test Template",
+                    purpose: "Assess read-heavy search endpoint performance and caching effectiveness.",
+                    suitable: "Read query scalability testing.",
+                    runtime: "5 minutes",
+                    env: "STAGING / PROD (Off-peak)"
+                };
                 break;
             case 'checkout-stress':
                 name = 'Checkout Stress Test';
@@ -1175,23 +1201,68 @@ document.addEventListener('DOMContentLoaded', () => {
                 httpUrl = 'https://httpbin.org/post';
                 httpHeaders = '{\n  "Content-Type": "application/json",\n  "Authorization": "Bearer sample_token"\n}';
                 httpBody = '{\n  "cart_id": "cart_9988",\n  "items": [101, 102]\n}';
+                meta = {
+                    title: "Checkout Stress Test Template",
+                    purpose: "Push the checkout transaction process to its breaking limit.",
+                    suitable: "Database transaction lock check & failure isolation.",
+                    runtime: "2 minutes",
+                    env: "STAGING (Isolated)"
+                };
                 break;
             case 'kafka-producer':
                 name = 'Kafka Producer Benchmark';
                 rps = 1000; think = 10; proto = 'Kafka'; type = 'VOLUME';
+                meta = {
+                    title: "Kafka Producer Benchmark Template",
+                    purpose: "Determine queue injection and ingestion limits for message throughput.",
+                    suitable: "Event pipeline throughput testing.",
+                    runtime: "2 minutes",
+                    env: "DEV / STAGING"
+                };
                 break;
             case 'kafka-consumer':
                 name = 'Kafka Consumer Benchmark';
                 rps = 500; think = 50; proto = 'Kafka'; type = 'LOAD';
+                meta = {
+                    title: "Kafka Consumer Benchmark Template",
+                    purpose: "Assess queue consumption latency and processing rates.",
+                    suitable: "Consumer group backpressure profiling.",
+                    runtime: "5 minutes",
+                    env: "STAGING"
+                };
                 break;
             case 'db-bench':
                 name = 'Database Benchmark';
                 rps = 500; think = 50; proto = 'Database'; type = 'STRESS';
+                meta = {
+                    title: "Database Benchmark Template",
+                    purpose: "Stress database query executors and connection pool configuration.",
+                    suitable: "Query profile optimizations.",
+                    runtime: "2 minutes",
+                    env: "DEV / STAGING"
+                };
                 break;
             case 'browser-audit':
                 name = 'Browser Performance Audit';
                 rps = 5; think = 5000; proto = 'Browser'; type = 'LOAD';
+                meta = {
+                    title: "Browser Performance Audit Template",
+                    purpose: "Measure user experience vitals (FCP, LCP, TTI) under active pages.",
+                    suitable: "Core Web Vitals auditing.",
+                    runtime: "5 minutes",
+                    env: "DEV / STAGING"
+                };
                 break;
+        }
+
+        // Render metadata
+        if (metaDiv) {
+            document.getElementById('wiz-template-title').textContent = meta.title;
+            document.getElementById('wiz-template-purpose').textContent = meta.purpose;
+            document.getElementById('wiz-template-suitable').textContent = meta.suitable;
+            document.getElementById('wiz-template-runtime').textContent = meta.runtime;
+            document.getElementById('wiz-template-env').textContent = meta.env;
+            metaDiv.classList.remove('hide');
         }
         
         document.getElementById('wiz-scenario-name').value = name;
@@ -1560,6 +1631,24 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
+    function setValidationStyle(elementId, status) {
+        const el = document.getElementById(elementId);
+        if (!el) return;
+        el.style.borderColor = "";
+        el.style.background = "";
+        
+        if (status === 'success') {
+            el.style.borderColor = "#10B981";
+            el.style.background = "rgba(16, 185, 129, 0.05)";
+        } else if (status === 'warning') {
+            el.style.borderColor = "#F59E0B";
+            el.style.background = "rgba(245, 158, 11, 0.05)";
+        } else if (status === 'error') {
+            el.style.borderColor = "#EF4444";
+            el.style.background = "rgba(239, 68, 68, 0.05)";
+        }
+    }
+
     // Epic 4: Scenario Preview
     function updatePreview() {
         const vus = parseInt(document.getElementById('wiz-vus').value) || 0;
@@ -1570,8 +1659,8 @@ document.addEventListener('DOMContentLoaded', () => {
         const pacing = parseInt(document.getElementById('wiz-pacing').value) || 100;
         const estPeakRPS = Math.round((vus / (pacing / 1000)));
         
-        const p95 = document.getElementById('wiz-sla-p95').value;
-        const p99 = document.getElementById('wiz-sla-p99').value;
+        const p95 = document.getElementById('wiz-sla-p95').value.trim();
+        const p99 = document.getElementById('wiz-sla-p99').value.trim();
         const errRate = document.getElementById('wiz-sla-error').value;
         const minRps = document.getElementById('wiz-sla-rps').value;
         const hasSla = p95 || p99 || errRate || minRps;
@@ -1595,54 +1684,123 @@ document.addEventListener('DOMContentLoaded', () => {
         let score = 100;
         const warnings = [];
         const recommendations = [];
+        let hasErrors = false;
 
-        // 1. Duration check
-        if (dur <= 0) {
-            score -= 20;
-            warnings.push("Duration must be greater than 0.");
-            recommendations.push("Specify a valid test execution duration.");
-        } else if (activeWizTestType === 'LOAD' && dur < 300) {
-            score -= 20;
-            warnings.push("Load test duration is too short (< 300 seconds).");
-            recommendations.push("Increase duration to 300 seconds (5 minutes) or more for standard load testing.");
-        } else if (activeWizTestType === 'SOAK' && dur < 3600) {
-            score -= 20;
-            warnings.push("Soak test duration is too short (< 3600 seconds).");
-            recommendations.push("Increase duration to 3600 seconds (1 hour) or more to identify long-term degradation.");
+        // Epic 1: Real-Time Input Validation
+        // URL validation (HTTP / Browser only)
+        if (activeWizProtocol === 'HTTP') {
+            const urlVal = document.getElementById('wiz-http-url').value.trim();
+            if (!urlVal.startsWith('http://') && !urlVal.startsWith('https://')) {
+                hasErrors = true;
+                setValidationStyle('wiz-http-url', 'error');
+                warnings.push("Target URL must start with http:// or https:// (e.g. https://api.company.com)");
+                score -= 20;
+            } else {
+                setValidationStyle('wiz-http-url', 'success');
+            }
+        } else if (activeWizProtocol === 'Browser') {
+            const urlVal = document.getElementById('wiz-browser-url').value.trim();
+            if (!urlVal.startsWith('http://') && !urlVal.startsWith('https://')) {
+                hasErrors = true;
+                setValidationStyle('wiz-browser-url', 'error');
+                warnings.push("Browser Target URL must start with http:// or https://");
+                score -= 20;
+            } else {
+                setValidationStyle('wiz-browser-url', 'success');
+            }
         }
 
-        // 2. SLA check
-        if (!hasSla) {
+        // VU Validation
+        if (vus <= 0) {
+            hasErrors = true;
+            setValidationStyle('wiz-vus', 'error');
+            warnings.push("Target VUs must be greater than 0.");
+            score -= 25;
+        } else {
+            setValidationStyle('wiz-vus', 'success');
+        }
+
+        // Duration / Ramp up Validation
+        if (dur <= 0) {
+            hasErrors = true;
+            setValidationStyle('wiz-duration', 'error');
+            warnings.push("Duration must be greater than 0.");
+            score -= 20;
+        } else if (dur < ramp) {
+            hasErrors = true;
+            setValidationStyle('wiz-duration', 'error');
+            warnings.push(`Duration (${dur}s) must be greater than or equal to Ramp Up (${ramp}s).`);
+            score -= 20;
+        } else {
+            setValidationStyle('wiz-duration', 'success');
+            
+            // Standard warnings (non-blocking)
+            if (activeWizTestType === 'LOAD' && dur < 300) {
+                warnings.push("Load test duration is too short (< 300 seconds).");
+                recommendations.push("Increase duration to 300 seconds (5 minutes) or more for standard load testing.");
+                score -= 10;
+            } else if (activeWizTestType === 'SOAK' && dur < 3600) {
+                warnings.push("Soak test duration is too short (< 3600 seconds).");
+                recommendations.push("Increase duration to 3600 seconds (1 hour) or more to identify long-term degradation.");
+                score -= 10;
+            }
+        }
+
+        // Threshold P95 < P99 Validation
+        if (p95 && p99 && parseFloat(p95) >= parseFloat(p99)) {
+            hasErrors = true;
+            setValidationStyle('wiz-sla-p95', 'error');
+            setValidationStyle('wiz-sla-p99', 'error');
+            warnings.push("SLA target P95 Latency must be less than P99 Latency.");
             score -= 15;
+        } else {
+            if (p95) setValidationStyle('wiz-sla-p95', 'success');
+            if (p99) setValidationStyle('wiz-sla-p99', 'success');
+        }
+
+        // CSV strategy selection and upload validation
+        const csvStrategy = document.getElementById('wiz-csv-strategy')?.value || 'sequential';
+        if (csvStrategy !== 'sequential' && !uploadedCsvData) {
+            hasErrors = true;
+            setValidationStyle('wiz-csv-strategy', 'error');
+            warnings.push("Data-driven strategy selected but no CSV file uploaded.");
+            score -= 15;
+        } else {
+            if (uploadedCsvData) {
+                setValidationStyle('wiz-csv-strategy', 'success');
+            } else {
+                setValidationStyle('wiz-csv-strategy', 'warning');
+            }
+        }
+
+        // 2. SLA check (non-blocking)
+        if (!hasSla) {
             warnings.push("SLA thresholds are missing.");
             recommendations.push("Configure at least one SLA target (e.g. P95 Latency or Max Error Rate) to establish pass/fail validation.");
+            score -= 15;
         }
 
-        // 3. Ramp Up check
+        // 3. Ramp Up check (non-blocking)
         if (ramp <= 0) {
-            score -= 10;
             warnings.push("Ramp-up duration is not configured.");
             recommendations.push("Set a ramp-up duration to ease simulated virtual users onto the target environment.");
-        } else if (activeWizTestType === 'LOAD' && ramp < (0.10 * dur)) {
             score -= 10;
+        } else if (activeWizTestType === 'LOAD' && ramp < (0.10 * dur)) {
             warnings.push("Load test ramp-up is less than 10% of total duration.");
             recommendations.push(`Increase ramp-up duration to at least ${Math.ceil(0.10 * dur)}s to prevent extreme baseline shocks.`);
-        } else if (activeWizTestType === 'SPIKE' && ramp > 30) {
             score -= 10;
+        } else if (activeWizTestType === 'SPIKE' && ramp > 30) {
             warnings.push("Spike test ramp-up is too slow (> 30 seconds).");
             recommendations.push("Decrease ramp-up to 30 seconds or less to simulate an abrupt surge of users.");
+            score -= 10;
         }
 
-        // 4. Workload Profile / Target VU check
-        if (vus <= 0) {
-            score -= 25;
-            warnings.push("Target VUs must be greater than 0.");
-            recommendations.push("Increase target VUs to represent a realistic concurrent user population.");
-        } else if (activeWizTestType === 'STRESS') {
+        // 4. Stress workload check (non-blocking)
+        if (vus > 0 && activeWizTestType === 'STRESS') {
             if (vus <= 50) {
-                score -= 25;
                 warnings.push("Stress test Target VUs (50 or less) might be too low to exceed baseline capacity.");
                 recommendations.push("Increase target VUs above typical baseline capacity (> 50 VUs) to push system limits.");
+                score -= 15;
             }
             if (!errRate && !p95 && !p99) {
                 warnings.push("Critical SLA threshold (latency or error rate) is not configured for Stress Test.");
@@ -1716,6 +1874,111 @@ document.addEventListener('DOMContentLoaded', () => {
         } else {
             if (issuesContainer) issuesContainer.classList.add('hide');
         }
+
+        // Disable / Enable Generate Button if there are critical errors
+        const genBtn = document.getElementById('btn-wizard-generate');
+        if (genBtn) {
+            genBtn.disabled = hasErrors;
+            if (hasErrors) {
+                genBtn.style.opacity = "0.5";
+                genBtn.style.cursor = "not-allowed";
+                genBtn.title = "Resolve validation errors before generating scenario.";
+            } else {
+                genBtn.style.opacity = "";
+                genBtn.style.cursor = "";
+                genBtn.title = "";
+            }
+        }
+
+        // Epic 2: Scenario Complexity Score
+        const authType = document.getElementById('wiz-auth-type')?.value || 'none';
+        const vuWeight = Math.min(40, vus * 0.1);
+        const csvWeight = uploadedCsvData ? 20 : 0;
+        const authWeight = authType !== 'none' ? 15 : 0;
+        const durationWeight = Math.min(25, dur / 30);
+        const complexityScore = Math.round(9 + vuWeight + csvWeight + authWeight + durationWeight);
+        const cappedComplexityScore = Math.min(100, complexityScore);
+
+        let complexityLevel = "LOW";
+        let complexityColor = "#10B981"; // emerald
+        if (cappedComplexityScore >= 70) {
+            complexityLevel = "HIGH";
+            complexityColor = "#EF4444"; // red
+        } else if (cappedComplexityScore >= 30) {
+            complexityLevel = "MEDIUM";
+            complexityColor = "#F59E0B"; // amber
+        }
+
+        const compScoreEl = document.getElementById('wiz-complexity-score');
+        const compLevelEl = document.getElementById('wiz-complexity-level');
+        const compCard = document.getElementById('card-scenario-complexity');
+        if (compScoreEl) compScoreEl.textContent = cappedComplexityScore;
+        if (compLevelEl) {
+            compLevelEl.textContent = complexityLevel;
+            compLevelEl.style.color = complexityColor;
+        }
+        if (compCard) {
+            compCard.style.borderColor = complexityColor + "33"; // 20% alpha
+        }
+
+        // Epic 3: Workload Recommendation
+        let recCpuRam = "2 CPU / 2 GB RAM";
+        if (activeWizProtocol === 'Browser') {
+            if (vus <= 20) {
+                recCpuRam = "4 CPU / 8 GB RAM";
+            } else {
+                recCpuRam = "8 CPU / 16 GB RAM";
+            }
+        } else {
+            if (vus <= 100) {
+                recCpuRam = "2 CPU / 2 GB RAM";
+            } else if (vus <= 500) {
+                recCpuRam = "4 CPU / 8 GB RAM";
+            } else {
+                recCpuRam = "8 CPU / 16 GB RAM";
+            }
+        }
+
+        const recEngineEl = document.getElementById('rec-engine-capacity');
+        const recPeakRpsEl = document.getElementById('rec-peak-rps');
+        if (recEngineEl) recEngineEl.textContent = recCpuRam;
+        if (recPeakRpsEl) recPeakRpsEl.textContent = `~${estPeakRPS.toLocaleString()} req/sec`;
+
+        // Epic 7: Wizard Summary Report Card
+        let targetUrl = "-";
+        let httpMethod = "-";
+        if (activeWizProtocol === 'HTTP') {
+            targetUrl = document.getElementById('wiz-http-url')?.value || "-";
+            httpMethod = document.getElementById('wiz-http-method')?.value || "GET";
+        } else if (activeWizProtocol === 'Browser') {
+            targetUrl = document.getElementById('wiz-browser-url')?.value || "-";
+        } else if (activeWizProtocol === 'Kafka') {
+            targetUrl = document.getElementById('wiz-kafka-brokers')?.value || "-";
+        } else if (activeWizProtocol === 'Database') {
+            targetUrl = document.getElementById('wiz-db-dsn')?.value || "-";
+        }
+
+        const sumProto = document.getElementById('summary-proto');
+        const sumMethod = document.getElementById('summary-method');
+        const sumTarget = document.getElementById('summary-target');
+        const sumAuth = document.getElementById('summary-auth');
+        const sumDatasource = document.getElementById('summary-datasource');
+        const sumTestType = document.getElementById('summary-testtype');
+        const sumVus = document.getElementById('summary-vus');
+        const sumDuration = document.getElementById('summary-duration');
+        const sumForecastRps = document.getElementById('summary-forecast-rps');
+        const sumForecastEngine = document.getElementById('summary-forecast-engine');
+
+        if (sumProto) sumProto.textContent = activeWizProtocol;
+        if (sumMethod) sumMethod.textContent = activeWizProtocol === 'HTTP' ? httpMethod : "-";
+        if (sumTarget) sumTarget.textContent = targetUrl;
+        if (sumAuth) sumAuth.textContent = authType.toUpperCase();
+        if (sumDatasource) sumDatasource.textContent = uploadedCsvData ? uploadedCsvData.fileName : "None";
+        if (sumTestType) sumTestType.textContent = activeWizTestType;
+        if (sumVus) sumVus.textContent = `${vus} VUs`;
+        if (sumDuration) sumDuration.textContent = `${dur} sec (${durUnit === 'min' ? durInput + 'm' : durInput + 's'})`;
+        if (sumForecastRps) sumForecastRps.textContent = `~${estPeakRPS.toLocaleString()} RPS`;
+        if (sumForecastEngine) sumForecastEngine.textContent = recCpuRam;
     }
 
     // Capture input updates for all inputs
@@ -1863,7 +2126,9 @@ document.addEventListener('DOMContentLoaded', () => {
                     if (displayScen.auth.key_value) displayScen.auth.key_value = "********";
                     if (displayScen.auth.client_secret) displayScen.auth.client_secret = "********";
                 }
+                lastDslContent = txtDsl.value; // Store previous value as baseline for Diff Comparison
                 txtDsl.value = JSON.stringify(displayScen, null, 2);
+                runReadinessCheck(); // Update Pre-Run Readiness Checks
                 appendTerminalLine(`Generated scenario config using Wizard and loaded to editor.`, 'system-msg');
                 const specCard = document.querySelector('.config-card');
                 if (specCard) {
@@ -1946,13 +2211,209 @@ document.addEventListener('DOMContentLoaded', () => {
         } catch (e) { console.error("Failed to fetch scenarios", e); }
     }
 
+    let lastDslContent = txtDsl.value;
+
+    function escapeHtml(text) {
+        return text
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;")
+            .replace(/'/g, "&#039;");
+    }
+
+    function computeLineDiff(oldText, newText) {
+        const oldLines = oldText.split('\n');
+        const newLines = newText.split('\n');
+        let html = '';
+        const maxLen = Math.max(oldLines.length, newLines.length);
+        for (let i = 0; i < maxLen; i++) {
+            const o = oldLines[i];
+            const n = newLines[i];
+            if (o === undefined) {
+                html += `<div style="background: rgba(16, 185, 129, 0.15); color: #34D399; padding: 0.1rem 0.2rem;">+ ${escapeHtml(n)}</div>`;
+            } else if (n === undefined) {
+                html += `<div style="background: rgba(239, 68, 68, 0.15); color: #F87171; padding: 0.1rem 0.2rem;">- ${escapeHtml(o)}</div>`;
+            } else if (o !== n) {
+                html += `<div style="background: rgba(239, 68, 68, 0.15); color: #F87171; padding: 0.1rem 0.2rem;">- ${escapeHtml(o)}</div>`;
+                html += `<div style="background: rgba(16, 185, 129, 0.15); color: #34D399; padding: 0.1rem 0.2rem;">+ ${escapeHtml(n)}</div>`;
+            } else {
+                html += `<div style="color: #9CA3AF; padding: 0.1rem 0.2rem;">  ${escapeHtml(n)}</div>`;
+            }
+        }
+        return `<pre style="font-family: monospace; white-space: pre-wrap; margin: 0; line-height: 1.4; color: #D1D5DB;">${html}</pre>`;
+    }
+
+    function runReadinessCheck() {
+        const dslText = txtDsl.value;
+        let parsed = null;
+        let jsonError = null;
+        try {
+            parsed = JSON.parse(dslText);
+        } catch (e) {
+            jsonError = e.message;
+        }
+
+        const checkUrl = document.getElementById('check-url');
+        const checkAuth = document.getElementById('check-auth');
+        const checkThreshold = document.getElementById('check-threshold');
+        const checkCsv = document.getElementById('check-csv');
+        const checkWorkload = document.getElementById('check-workload');
+        const readinessStatus = document.getElementById('readiness-status-badge');
+        
+        let allPass = true;
+
+        if (jsonError) {
+            allPass = false;
+            if (checkUrl) { checkUrl.style.color = '#EF4444'; checkUrl.innerHTML = `<span class="icon">✗</span> JSON syntax error: ${jsonError}`; }
+            if (checkAuth) { checkAuth.style.color = '#EF4444'; checkAuth.innerHTML = `<span class="icon">✗</span> Authentication Configured (JSON error)`; }
+            if (checkThreshold) { checkThreshold.style.color = '#EF4444'; checkThreshold.innerHTML = `<span class="icon">✗</span> Threshold Valid (JSON error)`; }
+            if (checkCsv) { checkCsv.style.color = '#EF4444'; checkCsv.innerHTML = `<span class="icon">✗</span> CSV Data Source Ready (JSON error)`; }
+            if (checkWorkload) { checkWorkload.style.color = '#EF4444'; checkWorkload.innerHTML = `<span class="icon">✗</span> Workload Valid (JSON error)`; }
+            
+            if (readinessStatus) {
+                readinessStatus.textContent = 'FAIL';
+                readinessStatus.className = 'badge';
+                readinessStatus.style.backgroundColor = '#EF4444';
+            }
+            btnStart.disabled = true;
+            btnStart.style.opacity = '0.5';
+            btnStart.style.pointerEvents = 'none';
+            return;
+        }
+
+        // 1. URL Check
+        let urlOk = true;
+        const protocol = parsed.protocol || '';
+        const config = parsed.config || {};
+        if (protocol === 'HTTP' || protocol === 'Browser') {
+            const urlVal = config.url || '';
+            if (!urlVal.startsWith('http://') && !urlVal.startsWith('https://')) {
+                urlOk = false;
+            }
+        }
+        if (urlOk) {
+            if (checkUrl) { checkUrl.style.color = '#10B981'; checkUrl.innerHTML = `<span class="icon">✓</span> URL Scheme & Format Valid`; }
+        } else {
+            allPass = false;
+            if (checkUrl) { checkUrl.style.color = '#EF4444'; checkUrl.innerHTML = `<span class="icon">✗</span> URL missing scheme (http:// or https://)`; }
+        }
+
+        // 2. Auth Check
+        let authOk = true;
+        if (parsed.auth && parsed.auth.type && parsed.auth.type !== 'none') {
+            const auth = parsed.auth;
+            if (auth.type === 'basic' && (!auth.username || !auth.password)) authOk = false;
+            if (auth.type === 'bearer' && !auth.token) authOk = false;
+            if (auth.type === 'apikey' && (!auth.header_name || !auth.key_value)) authOk = false;
+            if (auth.type === 'oauth2' && (!auth.token_url || !auth.client_id || !auth.client_secret)) authOk = false;
+        }
+        if (authOk) {
+            const label = (parsed.auth && parsed.auth.type && parsed.auth.type !== 'none') ? `Authentication Configured (${parsed.auth.type})` : 'Authentication Configured (None)';
+            if (checkAuth) { checkAuth.style.color = '#10B981'; checkAuth.innerHTML = `<span class="icon">✓</span> ${label}`; }
+        } else {
+            allPass = false;
+            if (checkAuth) { checkAuth.style.color = '#EF4444'; checkAuth.innerHTML = `<span class="icon">✗</span> Authentication Configured (Missing credentials)`; }
+        }
+
+        // 3. Threshold Check
+        let threshOk = true;
+        if (parsed.slas) {
+            const p95 = parsed.slas.p95_latency_ms;
+            const p99 = parsed.slas.p99_latency_ms;
+            if (p95 !== undefined && p99 !== undefined && parseFloat(p95) >= parseFloat(p99)) {
+                threshOk = false;
+            }
+        }
+        if (threshOk) {
+            if (checkThreshold) { checkThreshold.style.color = '#10B981'; checkThreshold.innerHTML = `<span class="icon">✓</span> Threshold Valid (P95 < P99)`; }
+        } else {
+            allPass = false;
+            if (checkThreshold) { checkThreshold.style.color = '#EF4444'; checkThreshold.innerHTML = `<span class="icon">✗</span> Threshold Invalid (P95 must be < P99)`; }
+        }
+
+        // 4. CSV Check
+        let csvOk = true;
+        if (parsed.data_source && parsed.data_source.type === 'csv') {
+            const fileName = parsed.data_source.file_name || '';
+            if (!uploadedCsvData || uploadedCsvData.fileName !== fileName) {
+                csvOk = false;
+            }
+        }
+        if (csvOk) {
+            const label = (parsed.data_source && parsed.data_source.type === 'csv') ? `CSV Loaded (${parsed.data_source.file_name})` : 'CSV Data Source Ready (None Required)';
+            if (checkCsv) { checkCsv.style.color = '#10B981'; checkCsv.innerHTML = `<span class="icon">✓</span> ${label}`; }
+        } else {
+            allPass = false;
+            if (checkCsv) { checkCsv.style.color = '#EF4444'; checkCsv.innerHTML = `<span class="icon">✗</span> CSV Not Found (${parsed.data_source.file_name})`; }
+        }
+
+        // 5. Workload Check
+        let workloadOk = true;
+        const vus = parsed.vus !== undefined ? parseInt(parsed.vus) : 0;
+        const dur = parsed.duration_seconds !== undefined ? parseInt(parsed.duration_seconds) : 0;
+        const ramp = parsed.ramp_up_seconds !== undefined ? parseInt(parsed.ramp_up_seconds) : 0;
+        if (vus <= 0 || dur < ramp) {
+            workloadOk = false;
+        }
+        if (workloadOk) {
+            if (checkWorkload) { checkWorkload.style.color = '#10B981'; checkWorkload.innerHTML = `<span class="icon">✓</span> Workload Valid (VU: ${vus}, Dur: ${dur}s, Ramp: ${ramp}s)`; }
+        } else {
+            allPass = false;
+            if (checkWorkload) { checkWorkload.style.color = '#EF4444'; checkWorkload.innerHTML = `<span class="icon">✗</span> Workload Invalid (VU > 0 & Duration >= Ramp)`; }
+        }
+
+        if (readinessStatus) {
+            if (allPass) {
+                readinessStatus.textContent = 'PASS';
+                readinessStatus.style.backgroundColor = '#10B981';
+            } else {
+                readinessStatus.textContent = 'FAIL';
+                readinessStatus.style.backgroundColor = '#EF4444';
+            }
+        }
+        btnStart.disabled = !allPass;
+        if (!allPass) {
+            btnStart.style.opacity = '0.5';
+            btnStart.style.pointerEvents = 'none';
+        } else {
+            btnStart.style.opacity = '';
+            btnStart.style.pointerEvents = '';
+        }
+    }
+
+    if (txtDsl) {
+        txtDsl.addEventListener('input', runReadinessCheck);
+        txtDsl.addEventListener('change', runReadinessCheck);
+    }
+
+    const btnCompare = document.getElementById('btn-scen-compare');
+    const diffPanel = document.getElementById('dsl-diff-panel');
+    const diffContent = document.getElementById('dsl-diff-content');
+    const btnCloseDiff = document.getElementById('btn-close-diff');
+
+    if (btnCompare) {
+        btnCompare.addEventListener('click', () => {
+            const currentDsl = txtDsl.value;
+            const diffHtml = computeLineDiff(lastDslContent, currentDsl);
+            if (diffContent) diffContent.innerHTML = diffHtml;
+            if (diffPanel) diffPanel.classList.remove('hide');
+        });
+    }
+
+    if (btnCloseDiff) {
+        btnCloseDiff.addEventListener('click', () => {
+            if (diffPanel) diffPanel.classList.add('hide');
+        });
+    }
+
     if (btnScenSave) {
         btnScenSave.addEventListener('click', async () => {
             try {
                 const configRaw = txtDsl.value;
                 const configObj = JSON.parse(configRaw);
                 const scenName = configObj.name || "Unnamed Scenario";
-                const scenId = selectSavedScen.value || ""; // If empty, backend creates new ID
+                const scenId = selectSavedScen.value || "";
 
                 const resp = await fetch('/api/scenarios', {
                     method: 'POST',
@@ -1961,8 +2422,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 });
 
                 if (resp.ok) {
+                    lastDslContent = configRaw;
                     appendTerminalLine(`Saved scenario: ${scenName}`, 'system-msg');
                     fetchScenarios();
+                    runReadinessCheck();
                 } else {
                     alert("Failed to save scenario");
                 }
@@ -1978,7 +2441,9 @@ document.addEventListener('DOMContentLoaded', () => {
             if (!scenId) { alert("Please select a scenario to load."); return; }
             const scen = savedScenariosData.find(s => s.id === scenId);
             if (scen) {
+                lastDslContent = txtDsl.value;
                 txtDsl.value = JSON.stringify(JSON.parse(scen.config_json), null, 2);
+                runReadinessCheck();
                 appendTerminalLine(`Loaded scenario: ${scen.name}`, 'system-msg');
             }
         });
@@ -1990,8 +2455,10 @@ document.addEventListener('DOMContentLoaded', () => {
                 const configRaw = txtDsl.value;
                 const configObj = JSON.parse(configRaw);
                 configObj.name = configObj.name + " (Copy)";
+                lastDslContent = txtDsl.value;
                 txtDsl.value = JSON.stringify(configObj, null, 2);
-                selectSavedScen.value = ""; // Deselect so it saves as new
+                selectSavedScen.value = "";
+                runReadinessCheck();
                 appendTerminalLine(`Duplicated scenario. Click Save to persist.`, 'system-msg');
             } catch (err) {
                 alert("Invalid JSON configuration.");
@@ -1999,6 +2466,7 @@ document.addEventListener('DOMContentLoaded', () => {
         });
     }
 
-    // Initial fetch
+    // Initial fetch and check
     fetchScenarios();
+    runReadinessCheck();
 });

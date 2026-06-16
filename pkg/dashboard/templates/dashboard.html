@@ -748,6 +748,15 @@
                                         <option value="db-bench">Database Benchmark</option>
                                         <option value="browser-audit">Browser Performance Audit</option>
                                     </select>
+                                    
+                                    <!-- Template Metadata Info Panel (Epic 5) -->
+                                    <div id="wiz-template-meta" class="hide" style="margin-top: 0.75rem; background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 0.75rem; font-size: 0.8rem; color: var(--text-muted);">
+                                        <h4 id="wiz-template-title" style="font-size: 0.85rem; margin: 0 0 0.5rem 0; color: #10B981; font-weight: 600;">-</h4>
+                                        <div style="margin-bottom: 0.4rem;"><strong>Purpose:</strong> <span id="wiz-template-purpose" style="color: var(--text-main);">-</span></div>
+                                        <div style="margin-bottom: 0.4rem;"><strong>Suitable For:</strong> <span id="wiz-template-suitable" style="color: var(--text-main);">-</span></div>
+                                        <div style="margin-bottom: 0.4rem;"><strong>Estimated Runtime:</strong> <span id="wiz-template-runtime" style="color: var(--text-main);">-</span></div>
+                                        <div><strong>Recommended Env:</strong> <span id="wiz-template-env" style="color: var(--text-main);">-</span></div>
+                                    </div>
                                 </div>
 
                                 <!-- Step 1 -->
@@ -1068,42 +1077,88 @@
                                     <div style="position: relative; margin-bottom: 1rem;">
                                         <canvas id="wiz-workload-canvas" width="700" height="260" style="width: 100%; height: 220px; background: rgba(15, 23, 42, 0.6); border-radius: 6px; border: 1px solid rgba(16, 185, 129, 0.3); display: block;"></canvas>
                                     </div>
-                                    <p id="wiz-preview-text" style="font-size: 0.85rem; color: #9CA3AF; line-height: 1.5; margin: 0; white-space: pre-wrap;">
+                                    <p id="wiz-preview-text" style="font-size: 0.85rem; color: #9CA3AF; line-height: 1.5; margin: 0 0 1rem 0; white-space: pre-wrap;">
                                         Configure workload to see projections.
                                     </p>
-                                </div>
-
-                                <!-- Step 8: Scenario Health Assessment -->
-                                <div id="card-scenario-health" class="wizard-step" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08); transition: background-color 0.3s, border-color 0.3s;">
-                                    <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 8: Scenario Health Assessment</h3>
                                     
-                                    <div style="display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1rem;">
-                                        <!-- Health Score Radial gauge -->
-                                        <div style="position: relative; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); border-radius: 50%; border: 4px solid #10B981;" id="wiz-health-score-circle">
-                                             <span id="wiz-health-score" style="font-size: 1.5rem; font-weight: bold; color: #10B981;">100</span>
+                                    <!-- Epic 3: Workload Recommendation Panel -->
+                                    <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 0.75rem;">
+                                        <h4 style="font-size: 0.85rem; margin: 0 0 0.5rem 0; color: #38BDF8; font-weight: 600;">Execution Recommendation</h4>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+                                            <div>Recommended Engine Capacity: <span id="rec-engine-capacity" style="color: var(--text-main); font-weight: bold;">2 CPU / 2 GB RAM</span></div>
+                                            <div>Expected Peak RPS: <span id="rec-peak-rps" style="color: var(--text-main); font-weight: bold;">~0 req/sec</span></div>
                                         </div>
-                                        <div style="flex: 1;">
-                                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
-                                                 <span style="font-size: 0.9rem; font-weight: 600;" id="wiz-health-status-title">Status: Excellent</span>
-                                                 <span class="badge" id="wiz-health-warnings-badge" style="background: #10B981; color: #fff;">0 Warnings</span>
-                                             </div>
-                                             <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
-                                                 <div id="wiz-health-score-bar" style="width: 100%; height: 100%; background: #10B981; transition: width 0.3s, background-color 0.3s;"></div>
-                                             </div>
-                                        </div>
-                                    </div>
-
-                                    <div id="wiz-health-issues-container" class="hide" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.75rem;">
-                                         <div style="font-size: 0.8rem; color: #F59E0B; margin-bottom: 0.5rem; font-weight: bold;">Warnings:</div>
-                                         <ul id="wiz-health-warnings-list" style="margin: 0 0 0.75rem 0; padding-left: 1.2rem; font-size: 0.8rem; color: #F59E0B; line-height: 1.4;"></ul>
-                                         
-                                         <div style="font-size: 0.8rem; color: #34D399; margin-bottom: 0.5rem; font-weight: bold;">Recommendations:</div>
-                                         <ul id="wiz-health-recommendations-list" style="margin: 0; padding-left: 1.2rem; font-size: 0.8rem; color: #A7F3D0; line-height: 1.4;"></ul>
                                     </div>
                                 </div>
 
-                                <div style="margin-top: 2rem;">
-                                    <button class="btn btn-primary" id="btn-wizard-generate" style="padding: 0.8rem 2rem;">Generate & Load Scenario</button>
+                                <!-- Step 8: Scenario Health & Complexity Assessment -->
+                                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
+                                    <!-- Health Assessment Card -->
+                                    <div id="card-scenario-health" class="wizard-step" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08); transition: background-color 0.3s, border-color 0.3s; margin-bottom: 0; padding: 1rem;">
+                                        <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 8: Health Assessment</h3>
+                                        <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.5rem;">
+                                            <!-- Health Score Radial gauge -->
+                                            <div style="position: relative; width: 60px; height: 60px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); border-radius: 50%; border: 3px solid #10B981; flex-shrink: 0;" id="wiz-health-score-circle">
+                                                 <span id="wiz-health-score" style="font-size: 1.25rem; font-weight: bold; color: #10B981;">100</span>
+                                            </div>
+                                            <div style="flex: 1;">
+                                                 <div style="display: flex; flex-direction: column; gap: 0.1rem; margin-bottom: 0.25rem;">
+                                                     <span style="font-size: 0.85rem; font-weight: 600;" id="wiz-health-status-title">Status: Excellent</span>
+                                                     <span class="badge" id="wiz-health-warnings-badge" style="background: #10B981; color: #fff; font-size: 0.7rem; align-self: flex-start; padding: 0.1rem 0.4rem; margin-top: 0.15rem;">0 Warnings</span>
+                                                 </div>
+                                                 <div style="width: 100%; height: 4px; background: rgba(255,255,255,0.1); border-radius: 2px; overflow: hidden;">
+                                                     <div id="wiz-health-score-bar" style="width: 100%; height: 100%; background: #10B981; transition: width 0.3s, background-color 0.3s;"></div>
+                                                 </div>
+                                            </div>
+                                        </div>
+                                        <div id="wiz-health-issues-container" class="hide" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.5rem; max-height: 120px; overflow-y: auto;">
+                                             <div style="font-size: 0.75rem; color: #F59E0B; margin-bottom: 0.25rem; font-weight: bold;">Warnings:</div>
+                                             <ul id="wiz-health-warnings-list" style="margin: 0 0 0.5rem 0; padding-left: 1rem; font-size: 0.75rem; color: #F59E0B; line-height: 1.3;"></ul>
+                                             <div style="font-size: 0.75rem; color: #34D399; margin-bottom: 0.25rem; font-weight: bold;">Recommendations:</div>
+                                             <ul id="wiz-health-recommendations-list" style="margin: 0; padding-left: 1rem; font-size: 0.75rem; color: #A7F3D0; line-height: 1.3;"></ul>
+                                        </div>
+                                    </div>
+
+                                    <!-- Complexity Score Card (Epic 2) -->
+                                    <div id="card-scenario-complexity" class="wizard-step" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08); transition: background-color 0.3s, border-color 0.3s; margin-bottom: 0; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+                                        <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Scenario Complexity</h3>
+                                        <div style="display: flex; gap: 1rem; align-items: center; justify-content: center; height: 100%; flex: 1;">
+                                             <div style="text-align: center;">
+                                                 <span id="wiz-complexity-level" style="font-size: 1.5rem; font-weight: bold; color: #10B981; display: block; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">LOW</span>
+                                                 <span style="font-size: 0.8rem; color: var(--text-muted);">Complexity Index: <span id="wiz-complexity-score" style="color: var(--text-main); font-weight: bold;">12</span></span>
+                                             </div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Epic 7: Wizard Summary Report Card -->
+                                <div class="wizard-step" style="background: rgba(139, 92, 246, 0.05); border-color: rgba(139, 92, 246, 0.2); padding: 1rem; margin-bottom: 1.5rem;">
+                                    <h3 style="font-size: 1rem; color: #C084FC; margin-bottom: 0.75rem;">Scenario Summary Report</h3>
+                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.8rem; color: var(--text-muted);">
+                                        <div>
+                                            <div style="margin-bottom: 0.4rem;"><strong>Protocol:</strong> <span id="summary-proto" style="color: var(--text-main);">-</span></div>
+                                            <div style="margin-bottom: 0.4rem;"><strong>Method:</strong> <span id="summary-method" style="color: var(--text-main);">-</span></div>
+                                            <div style="margin-bottom: 0.4rem;"><strong>Target:</strong> <span id="summary-target" style="color: var(--text-main); font-family: monospace; word-break: break-all;">-</span></div>
+                                            <div style="margin-bottom: 0.4rem;"><strong>Authentication:</strong> <span id="summary-auth" style="color: var(--text-main);">-</span></div>
+                                        </div>
+                                        <div>
+                                            <div style="margin-bottom: 0.4rem;"><strong>Data Source:</strong> <span id="summary-datasource" style="color: var(--text-main);">-</span></div>
+                                            <div style="margin-bottom: 0.4rem;"><strong>Test Type:</strong> <span id="summary-testtype" style="color: var(--text-main);">-</span></div>
+                                            <div style="margin-bottom: 0.4rem;"><strong>Target VU:</strong> <span id="summary-vus" style="color: var(--text-main);">-</span></div>
+                                            <div style="margin-bottom: 0.4rem;"><strong>Duration:</strong> <span id="summary-duration" style="color: var(--text-main);">-</span></div>
+                                        </div>
+                                    </div>
+                                    <div style="margin-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem;">
+                                        <h4 style="font-size: 0.85rem; margin: 0 0 0.4rem 0; color: #C084FC; font-weight: 600;">Capacity Forecast</h4>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+                                            <div>Expected Peak RPS: <span id="summary-forecast-rps" style="color: var(--text-main); font-weight: bold;">-</span></div>
+                                            <div>Estimated Engine: <span id="summary-forecast-engine" style="color: var(--text-main); font-weight: bold;">-</span></div>
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <div style="margin-top: 1.5rem;">
+                                    <button class="btn btn-primary" id="btn-wizard-generate" style="padding: 0.8rem 2rem; width: 100%;">Generate & Load Scenario</button>
                                 </div>
                             </div>
                         </div>
@@ -1137,11 +1192,46 @@
                             </div>
                             
                             <!-- Scenario Management -->
-                            <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; margin-top: 0.5rem;">
+                            <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem; margin-top: 0.5rem;">
                                 <select id="select-saved-scenarios" class="wizard-input-field" style="flex: 1; padding: 0.4rem; font-size: 0.8rem; background: rgba(255,255,255,0.05);"></select>
                                 <button class="btn btn-secondary" id="btn-scen-load" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">Load</button>
                                 <button class="btn btn-secondary" id="btn-scen-save" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;">Save</button>
                                 <button class="btn btn-secondary" id="btn-scen-duplicate" style="padding: 0.4rem 0.75rem; font-size: 0.8rem;" title="Duplicate Scenario">Copy</button>
+                                <button class="btn btn-secondary" id="btn-scen-compare" style="padding: 0.4rem 0.75rem; font-size: 0.8rem; background: rgba(139, 92, 246, 0.15); border-color: rgba(139, 92, 246, 0.3); color: #C084FC;" title="Compare DSL Changes">Compare</button>
+                            </div>
+
+                            <!-- Epic 4: DSL Diff Panel -->
+                            <div id="dsl-diff-panel" class="hide" style="background: rgba(15, 23, 42, 0.8); border: 1px solid rgba(255, 255, 255, 0.1); border-radius: 6px; margin-bottom: 0.75rem; max-height: 200px; overflow-y: auto; padding: 0.5rem;">
+                                <div style="display: flex; justify-content: space-between; align-items: center; border-bottom: 1px solid rgba(255, 255, 255, 0.1); padding-bottom: 0.25rem; margin-bottom: 0.5rem; font-size: 0.75rem; color: var(--text-muted);">
+                                    <span>DSL Diff Comparison</span>
+                                    <button class="btn btn-secondary" id="btn-close-diff" style="padding: 0.1rem 0.4rem; font-size: 0.7rem;">Close</button>
+                                </div>
+                                <div id="dsl-diff-content" style="font-size: 0.75rem;"></div>
+                            </div>
+
+                            <!-- Epic 6: Pre-Run Readiness Check Panel -->
+                            <div id="readiness-check-panel" style="margin-bottom: 0.75rem; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 0.75rem;">
+                                <h4 style="font-size: 0.85rem; margin: 0 0 0.5rem 0; color: var(--text-main); font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
+                                    Pre-Run Readiness Check
+                                    <span id="readiness-status-badge" class="badge" style="background-color: #10B981; color: white; padding: 0.1rem 0.4rem; font-size: 0.7rem; font-weight: bold;">PASS</span>
+                                </h4>
+                                <ul style="margin: 0; padding: 0; list-style: none; font-size: 0.8rem; line-height: 1.6;" id="readiness-checklist">
+                                    <li id="check-url" style="display: flex; align-items: center; gap: 0.4rem; color: #10B981;">
+                                        <span class="icon">✓</span> URL Scheme & Format Valid
+                                    </li>
+                                    <li id="check-auth" style="display: flex; align-items: center; gap: 0.4rem; color: #10B981;">
+                                        <span class="icon">✓</span> Authentication Configured
+                                    </li>
+                                    <li id="check-threshold" style="display: flex; align-items: center; gap: 0.4rem; color: #10B981;">
+                                        <span class="icon">✓</span> Threshold Valid (P95 < P99)
+                                    </li>
+                                    <li id="check-csv" style="display: flex; align-items: center; gap: 0.4rem; color: #10B981;">
+                                        <span class="icon">✓</span> CSV Data Source Ready
+                                    </li>
+                                    <li id="check-workload" style="display: flex; align-items: center; gap: 0.4rem; color: #10B981;">
+                                        <span class="icon">✓</span> Workload Valid (VU > 0 & Dur >= Ramp)
+                                    </li>
+                                </ul>
                             </div>
 
                             <div class="editor-actions">
