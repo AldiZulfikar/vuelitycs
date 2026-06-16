@@ -1094,7 +1094,7 @@
                                     <!-- Epic 3: Workload Recommendation Panel -->
                                     <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 0.75rem;">
                                         <h4 style="font-size: 0.85rem; margin: 0 0 0.5rem 0; color: #38BDF8; font-weight: 600;">Execution Recommendation</h4>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+                                        <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.8rem; color: var(--text-muted);">
                                             <div>Recommended Engine Capacity: <span id="rec-engine-capacity" style="color: var(--text-main); font-weight: bold;">2 CPU / 2 GB RAM</span></div>
                                             <div>Expected Peak RPS: <span id="rec-peak-rps" style="color: var(--text-main); font-weight: bold;">~0 req/sec</span></div>
                                         </div>
@@ -1200,18 +1200,18 @@
                                      </div>
 
                                      <!-- Deploy Status & Risk Summary inside report -->
-                                     <div style="margin-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem; display: grid; grid-template-columns: 120px 1fr; gap: 0.75rem; align-items: start;">
-                                         <div>
-                                             <h4 style="font-size: 0.85rem; margin: 0 0 0.4rem 0; color: #C084FC; font-weight: 600;">Deploy Status</h4>
-                                             <span id="summary-deploy-status" class="badge" style="background-color: #EF4444; color: white; padding: 0.15rem 0.5rem; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">BLOCKED</span>
-                                         </div>
-                                         <div>
-                                             <h4 style="font-size: 0.85rem; margin: 0 0 0.4rem 0; color: #C084FC; font-weight: 600;">Risk Summary</h4>
-                                             <div id="summary-risk-text" style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.3;">
-                                                 No performance risks identified.
-                                             </div>
-                                         </div>
-                                     </div>
+                                      <div style="margin-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem; display: grid; grid-template-columns: 1fr 1fr; gap: 0.75rem; align-items: start;">
+                                          <div>
+                                              <h4 style="font-size: 0.85rem; margin: 0 0 0.4rem 0; color: #C084FC; font-weight: 600;">Deploy Status</h4>
+                                              <span id="summary-deploy-status" class="badge" style="background-color: #EF4444; color: white; padding: 0.15rem 0.5rem; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">BLOCKED</span>
+                                          </div>
+                                          <div>
+                                              <h4 style="font-size: 0.85rem; margin: 0 0 0.4rem 0; color: #C084FC; font-weight: 600;">Risk Summary</h4>
+                                              <div id="summary-risk-text" style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.3;">
+                                                  No performance risks identified.
+                                              </div>
+                                          </div>
+                                      </div>
                                  </div>
 
                                 <div style="margin-top: 1.5rem;">

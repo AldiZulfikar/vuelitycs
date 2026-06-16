@@ -1860,11 +1860,8 @@ document.addEventListener('DOMContentLoaded', () => {
         // Metadata Validation
         const metaEnv = document.getElementById('wiz-meta-env')?.value || '';
         const metaVersion = document.getElementById('wiz-meta-version')?.value || '';
-        if (metaEnv && metaVersion) {
-            scoreBreakdown.push({ val: 20, text: "Metadata Complete" });
-        } else {
-            scoreBreakdown.push({ val: -10, text: "Metadata Incomplete" });
-        }
+        // Optional metadata: not added to health assessment score breakdown
+
 
         // SLA Check (non-blocking)
         if (hasSla) {
@@ -2797,9 +2794,8 @@ ${recCpuRam}`;
         if (vus > 0 && dur >= ramp) scoreBreakdown.push({ val: 20, text: "Workload Configured" });
         else scoreBreakdown.push({ val: -20, text: "Workload Invalid" });
 
-        // Metadata
-        if (metaOk) scoreBreakdown.push({ val: 20, text: "Metadata Complete" });
-        else scoreBreakdown.push({ val: -10, text: "Metadata Incomplete" });
+        // Metadata: Optional, not added to health assessment score breakdown
+
 
         // SLAs
         if (hasSlas) {
