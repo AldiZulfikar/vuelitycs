@@ -899,6 +899,73 @@
                                     </div>
                                 </div>
 
+                                <!-- Step 4.5: Authentication Builder -->
+                                <div class="wizard-step">
+                                    <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 4.5: Authentication Builder</h3>
+                                    <div style="margin-bottom: 1rem;">
+                                        <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Authentication Type</label>
+                                        <select id="wiz-auth-type" class="wizard-input-field" style="background: rgba(0,0,0,0.2); width: 100%;">
+                                            <option value="none">None</option>
+                                            <option value="basic">Basic Authentication</option>
+                                            <option value="bearer">Bearer Token</option>
+                                            <option value="apikey">API Key</option>
+                                            <option value="oauth2">OAuth2 Client Credentials</option>
+                                        </select>
+                                    </div>
+                                    
+                                    <!-- Basic Auth fields -->
+                                    <div id="wiz-auth-opt-basic" class="wiz-auth-opt hide" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Username</label>
+                                            <input type="text" id="wiz-auth-basic-user" class="wizard-input-field" placeholder="Username">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Password</label>
+                                            <input type="password" id="wiz-auth-basic-pass" class="wizard-input-field" placeholder="Password">
+                                        </div>
+                                    </div>
+
+                                    <!-- Bearer Token fields -->
+                                    <div id="wiz-auth-opt-bearer" class="wiz-auth-opt hide">
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Access Token</label>
+                                            <input type="password" id="wiz-auth-bearer-token" class="wizard-input-field" placeholder="Bearer Token Value">
+                                        </div>
+                                    </div>
+
+                                    <!-- API Key fields -->
+                                    <div id="wiz-auth-opt-apikey" class="wiz-auth-opt hide" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Header Name</label>
+                                            <input type="text" id="wiz-auth-apikey-name" class="wizard-input-field" placeholder="X-API-Key" value="X-API-Key">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">API Key Value</label>
+                                            <input type="password" id="wiz-auth-apikey-value" class="wizard-input-field" placeholder="API Key Secret">
+                                        </div>
+                                    </div>
+
+                                    <!-- OAuth2 Client Credential fields -->
+                                    <div id="wiz-auth-opt-oauth2" class="wiz-auth-opt hide" style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem;">
+                                        <div style="grid-column: span 2;">
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Token URL</label>
+                                            <input type="text" id="wiz-auth-oauth-url" class="wizard-input-field" placeholder="https://auth.example.com/oauth/token">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Client ID</label>
+                                            <input type="text" id="wiz-auth-oauth-id" class="wizard-input-field" placeholder="Client ID">
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Client Secret</label>
+                                            <input type="password" id="wiz-auth-oauth-secret" class="wizard-input-field" placeholder="Client Secret">
+                                        </div>
+                                        <div style="grid-column: span 2;">
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Scope (Optional)</label>
+                                            <input type="text" id="wiz-auth-oauth-scope" class="wizard-input-field" placeholder="read write">
+                                        </div>
+                                    </div>
+                                </div>
+
                                 <!-- Step 5: SLA Thresholds -->
                                 <div class="wizard-step">
                                     <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 5: SLA Thresholds</h3>
@@ -918,6 +985,41 @@
                                         <div>
                                             <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Min Throughput (RPS)</label>
                                             <input type="number" id="wiz-sla-rps" class="wizard-input-field" placeholder="e.g. 90">
+                                        </div>
+                                    </div>
+                                </div>
+
+                                <!-- Step 5.5: Data Source Configuration -->
+                                <div class="wizard-step">
+                                    <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 5.5: CSV Data Source Configuration</h3>
+                                    <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 1rem; margin-bottom: 1rem; align-items: flex-end;">
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Upload CSV File (Max 10MB)</label>
+                                            <input type="file" id="wiz-csv-file" accept=".csv" style="display: none;">
+                                            <div id="wiz-csv-dropzone" style="border: 2px dashed rgba(255,255,255,0.15); border-radius: 6px; padding: 1rem; text-align: center; cursor: pointer; background: rgba(0,0,0,0.15); transition: border-color 0.2s; min-height: 48px; display: flex; align-items: center; justify-content: center;">
+                                                <span id="wiz-csv-dropzone-text" style="font-size: 0.85rem; color: var(--text-muted);">Click or drag & drop CSV file here</span>
+                                            </div>
+                                        </div>
+                                        <div>
+                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Dataset Strategy</label>
+                                            <select id="wiz-csv-strategy" class="wizard-input-field" style="background: rgba(0,0,0,0.2); width: 100%;">
+                                                <option value="sequential">Sequential</option>
+                                                <option value="random">Random</option>
+                                                <option value="round-robin">Round Robin</option>
+                                            </select>
+                                        </div>
+                                    </div>
+
+                                    <!-- Dataset Summary Panel -->
+                                    <div id="wiz-csv-summary" class="hide" style="background: rgba(255, 255, 255, 0.03); border: 1px solid rgba(255, 255, 255, 0.08); border-radius: 6px; padding: 0.75rem;">
+                                        <h4 style="font-size: 0.85rem; margin: 0 0 0.5rem 0; color: #34D399;">Dataset Summary Panel</h4>
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+                                            <div>File Name: <span id="wiz-csv-name-val" style="color: var(--text-main); font-weight: 500;">-</span></div>
+                                            <div>Rows Detected: <span id="wiz-csv-rows-val" style="color: var(--text-main); font-weight: 500;">0</span></div>
+                                            <div style="grid-column: span 2;">
+                                                Detected variables: 
+                                                <div id="wiz-csv-vars-list" style="margin-top: 0.25rem; display: flex; flex-wrap: wrap; gap: 0.25rem;"></div>
+                                            </div>
                                         </div>
                                     </div>
                                 </div>
@@ -969,6 +1071,35 @@
                                     <p id="wiz-preview-text" style="font-size: 0.85rem; color: #9CA3AF; line-height: 1.5; margin: 0; white-space: pre-wrap;">
                                         Configure workload to see projections.
                                     </p>
+                                </div>
+
+                                <!-- Step 8: Scenario Health Assessment -->
+                                <div id="card-scenario-health" class="wizard-step" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08); transition: background-color 0.3s, border-color 0.3s;">
+                                    <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 8: Scenario Health Assessment</h3>
+                                    
+                                    <div style="display: flex; gap: 1.5rem; align-items: center; margin-bottom: 1rem;">
+                                        <!-- Health Score Radial gauge -->
+                                        <div style="position: relative; width: 80px; height: 80px; display: flex; align-items: center; justify-content: center; background: rgba(0,0,0,0.3); border-radius: 50%; border: 4px solid #10B981;" id="wiz-health-score-circle">
+                                             <span id="wiz-health-score" style="font-size: 1.5rem; font-weight: bold; color: #10B981;">100</span>
+                                        </div>
+                                        <div style="flex: 1;">
+                                             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.25rem;">
+                                                 <span style="font-size: 0.9rem; font-weight: 600;" id="wiz-health-status-title">Status: Excellent</span>
+                                                 <span class="badge" id="wiz-health-warnings-badge" style="background: #10B981; color: #fff;">0 Warnings</span>
+                                             </div>
+                                             <div style="width: 100%; height: 6px; background: rgba(255,255,255,0.1); border-radius: 3px; overflow: hidden;">
+                                                 <div id="wiz-health-score-bar" style="width: 100%; height: 100%; background: #10B981; transition: width 0.3s, background-color 0.3s;"></div>
+                                             </div>
+                                        </div>
+                                    </div>
+
+                                    <div id="wiz-health-issues-container" class="hide" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.75rem;">
+                                         <div style="font-size: 0.8rem; color: #F59E0B; margin-bottom: 0.5rem; font-weight: bold;">Warnings:</div>
+                                         <ul id="wiz-health-warnings-list" style="margin: 0 0 0.75rem 0; padding-left: 1.2rem; font-size: 0.8rem; color: #F59E0B; line-height: 1.4;"></ul>
+                                         
+                                         <div style="font-size: 0.8rem; color: #34D399; margin-bottom: 0.5rem; font-weight: bold;">Recommendations:</div>
+                                         <ul id="wiz-health-recommendations-list" style="margin: 0; padding-left: 1.2rem; font-size: 0.8rem; color: #A7F3D0; line-height: 1.4;"></ul>
+                                    </div>
                                 </div>
 
                                 <div style="margin-top: 2rem;">

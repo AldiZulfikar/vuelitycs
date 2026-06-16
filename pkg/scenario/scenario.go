@@ -14,6 +14,28 @@ import (
 	"vuelitycs/pkg/utils"
 )
 
+// AuthConfig represents authentications credentials for scenario requests
+type AuthConfig struct {
+	Type         string `json:"type"`                     // "none", "basic", "bearer", "apikey", "oauth2"
+	Username     string `json:"username,omitempty"`
+	Password     string `json:"password,omitempty"`
+	Token        string `json:"token,omitempty"`          // Bearer Token
+	HeaderName   string `json:"header_name,omitempty"`     // API Key Header Name
+	KeyValue     string `json:"key_value,omitempty"`       // API Key Value
+	TokenURL     string `json:"token_url,omitempty"`       // OAuth2 Token URL
+	ClientID     string `json:"client_id,omitempty"`       // OAuth2 Client ID
+	ClientSecret string `json:"client_secret,omitempty"`   // OAuth2 Client Secret
+	Scope        string `json:"scope,omitempty"`           // OAuth2 Scope
+}
+
+// DataSourceConfig represents an external dataset (e.g. CSV) for data-driven testing
+type DataSourceConfig struct {
+	Type     string            `json:"type"`               // "csv"
+	FileName string            `json:"file_name,omitempty"`
+	Strategy string            `json:"strategy,omitempty"` // "sequential", "random", "round-robin"
+	Mapping  map[string]string `json:"mapping,omitempty"`
+}
+
 // SLAConfig represents the performance threshold limits defined for the scenario
 type SLAConfig struct {
 	P95LatencyMs  float64 `json:"p95_latency_ms,omitempty"`
@@ -34,6 +56,8 @@ type Scenario struct {
 	Scheduler       string                 `json:"scheduler,omitempty"` // LoadScheduler, StressScheduler, SpikeScheduler, SoakScheduler, VolumeScheduler, ScalabilityScheduler
 	SLAs            *SLAConfig             `json:"slas,omitempty"`
 	Metadata        map[string]string      `json:"metadata,omitempty"`
+	Auth            *AuthConfig            `json:"auth,omitempty"`
+	DataSource      *DataSourceConfig      `json:"data_source,omitempty"`
 	Config          map[string]interface{} `json:"config"`
 }
 

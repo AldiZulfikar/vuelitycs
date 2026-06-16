@@ -1457,16 +1457,125 @@ document.addEventListener('DOMContentLoaded', () => {
         ctx.fillText(`${activeWizTestType} Profile Workload Model`, padLeft + 10, padTop + 2);
     }
 
+    // CSV Data Source State
+    let uploadedCsvData = null;
+
+    const csvFileEl = document.getElementById('wiz-csv-file');
+    const csvDropzone = document.getElementById('wiz-csv-dropzone');
+    const csvDropzoneText = document.getElementById('wiz-csv-dropzone-text');
+    const csvSummary = document.getElementById('wiz-csv-summary');
+    const csvNameVal = document.getElementById('wiz-csv-name-val');
+    const csvRowsVal = document.getElementById('wiz-csv-rows-val');
+    const csvVarsList = document.getElementById('wiz-csv-vars-list');
+
+    function handleCsvFile(file) {
+        if (!file) return;
+        if (file.size > 10 * 1024 * 1024) {
+            alert("File size exceeds 10MB limit.");
+            return;
+        }
+
+        const reader = new FileReader();
+        reader.onload = function(e) {
+            const text = e.target.result;
+            const lines = text.split('\n').map(l => l.trim()).filter(l => l.length > 0);
+            if (lines.length === 0) {
+                alert("CSV file is empty.");
+                return;
+            }
+
+            // Extract headers
+            const headers = lines[0].split(',').map(h => h.trim().replace(/^["']|["']$/g, ''));
+            const rowCount = lines.length - 1;
+
+            uploadedCsvData = {
+                fileName: file.name,
+                rowCount: rowCount,
+                variables: headers
+            };
+
+            // Update UI Summary Panel
+            if (csvNameVal) csvNameVal.textContent = file.name;
+            if (csvRowsVal) csvRowsVal.textContent = rowCount.toLocaleString();
+            if (csvVarsList) {
+                csvVarsList.innerHTML = "";
+                headers.forEach(h => {
+                    const span = document.createElement('span');
+                    span.className = "badge badge-purple";
+                    span.style.marginRight = "0.25rem";
+                    span.style.marginBottom = "0.25rem";
+                    span.textContent = `{{${h}}}`;
+                    csvVarsList.appendChild(span);
+                });
+            }
+
+            if (csvDropzoneText) csvDropzoneText.textContent = `Uploaded: ${file.name}`;
+            if (csvSummary) csvSummary.classList.remove('hide');
+            updatePreview();
+        };
+        reader.readAsText(file);
+    }
+
+    if (csvDropzone) {
+        csvDropzone.addEventListener('click', () => csvFileEl && csvFileEl.click());
+        csvDropzone.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            csvDropzone.style.borderColor = "#10B981";
+            csvDropzone.style.background = "rgba(16, 185, 129, 0.05)";
+        });
+        csvDropzone.addEventListener('dragleave', () => {
+            csvDropzone.style.borderColor = "rgba(255,255,255,0.15)";
+            csvDropzone.style.background = "rgba(0,0,0,0.15)";
+        });
+        csvDropzone.addEventListener('drop', (e) => {
+            e.preventDefault();
+            csvDropzone.style.borderColor = "rgba(255,255,255,0.15)";
+            csvDropzone.style.background = "rgba(0,0,0,0.15)";
+            const files = e.dataTransfer.files;
+            if (files.length > 0) {
+                handleCsvFile(files[0]);
+            }
+        });
+    }
+
+    if (csvFileEl) {
+        csvFileEl.addEventListener('change', (e) => {
+            if (e.target.files.length > 0) {
+                handleCsvFile(e.target.files[0]);
+            }
+        });
+    }
+
+    // Authentication Toggles
+    const authTypeEl = document.getElementById('wiz-auth-type');
+    if (authTypeEl) {
+        authTypeEl.addEventListener('change', () => {
+            document.querySelectorAll('.wiz-auth-opt').forEach(el => el.classList.add('hide'));
+            const selected = authTypeEl.value;
+            if (selected !== 'none') {
+                const optDiv = document.getElementById(`wiz-auth-opt-${selected}`);
+                if (optDiv) optDiv.classList.remove('hide');
+            }
+            updatePreview();
+        });
+    }
+
     // Epic 4: Scenario Preview
     function updatePreview() {
-        const vus = document.getElementById('wiz-vus').value || 0;
-        const durInput = document.getElementById('wiz-duration').value || 0;
+        const vus = parseInt(document.getElementById('wiz-vus').value) || 0;
+        const durInput = parseInt(document.getElementById('wiz-duration').value) || 0;
         const durUnit = document.getElementById('wiz-duration-unit').value;
         const dur = durUnit === 'min' ? durInput * 60 : durInput;
-        const ramp = document.getElementById('wiz-ramp-up').value || 0;
-        const pacing = document.getElementById('wiz-pacing').value || 100;
+        const ramp = parseInt(document.getElementById('wiz-ramp-up').value) || 0;
+        const pacing = parseInt(document.getElementById('wiz-pacing').value) || 100;
         const estPeakRPS = Math.round((vus / (pacing / 1000)));
-        const hasSla = document.getElementById('wiz-sla-p95').value || document.getElementById('wiz-sla-error').value;
+        
+        const p95 = document.getElementById('wiz-sla-p95').value;
+        const p99 = document.getElementById('wiz-sla-p99').value;
+        const errRate = document.getElementById('wiz-sla-error').value;
+        const minRps = document.getElementById('wiz-sla-rps').value;
+        const hasSla = p95 || p99 || errRate || minRps;
+
         const scenName = document.getElementById('wiz-scenario-name').value || "Wizard Generated Test";
         
         const previewText = `• Scenario Name: ${scenName}
@@ -1481,6 +1590,132 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Draw profile estimate graph
         drawWorkloadProfile();
+
+        // Epic 1: Rule Engine & Health Assessment
+        let score = 100;
+        const warnings = [];
+        const recommendations = [];
+
+        // 1. Duration check
+        if (dur <= 0) {
+            score -= 20;
+            warnings.push("Duration must be greater than 0.");
+            recommendations.push("Specify a valid test execution duration.");
+        } else if (activeWizTestType === 'LOAD' && dur < 300) {
+            score -= 20;
+            warnings.push("Load test duration is too short (< 300 seconds).");
+            recommendations.push("Increase duration to 300 seconds (5 minutes) or more for standard load testing.");
+        } else if (activeWizTestType === 'SOAK' && dur < 3600) {
+            score -= 20;
+            warnings.push("Soak test duration is too short (< 3600 seconds).");
+            recommendations.push("Increase duration to 3600 seconds (1 hour) or more to identify long-term degradation.");
+        }
+
+        // 2. SLA check
+        if (!hasSla) {
+            score -= 15;
+            warnings.push("SLA thresholds are missing.");
+            recommendations.push("Configure at least one SLA target (e.g. P95 Latency or Max Error Rate) to establish pass/fail validation.");
+        }
+
+        // 3. Ramp Up check
+        if (ramp <= 0) {
+            score -= 10;
+            warnings.push("Ramp-up duration is not configured.");
+            recommendations.push("Set a ramp-up duration to ease simulated virtual users onto the target environment.");
+        } else if (activeWizTestType === 'LOAD' && ramp < (0.10 * dur)) {
+            score -= 10;
+            warnings.push("Load test ramp-up is less than 10% of total duration.");
+            recommendations.push(`Increase ramp-up duration to at least ${Math.ceil(0.10 * dur)}s to prevent extreme baseline shocks.`);
+        } else if (activeWizTestType === 'SPIKE' && ramp > 30) {
+            score -= 10;
+            warnings.push("Spike test ramp-up is too slow (> 30 seconds).");
+            recommendations.push("Decrease ramp-up to 30 seconds or less to simulate an abrupt surge of users.");
+        }
+
+        // 4. Workload Profile / Target VU check
+        if (vus <= 0) {
+            score -= 25;
+            warnings.push("Target VUs must be greater than 0.");
+            recommendations.push("Increase target VUs to represent a realistic concurrent user population.");
+        } else if (activeWizTestType === 'STRESS') {
+            if (vus <= 50) {
+                score -= 25;
+                warnings.push("Stress test Target VUs (50 or less) might be too low to exceed baseline capacity.");
+                recommendations.push("Increase target VUs above typical baseline capacity (> 50 VUs) to push system limits.");
+            }
+            if (!errRate && !p95 && !p99) {
+                warnings.push("Critical SLA threshold (latency or error rate) is not configured for Stress Test.");
+                recommendations.push("Specify a critical latency or error threshold to catch saturation limits under stress.");
+            }
+        }
+
+        score = Math.max(0, Math.min(100, score));
+
+        // Render Health Card
+        const scoreEl = document.getElementById('wiz-health-score');
+        const scoreCircle = document.getElementById('wiz-health-score-circle');
+        const scoreBar = document.getElementById('wiz-health-score-bar');
+        const statusTitle = document.getElementById('wiz-health-status-title');
+        const warningsBadge = document.getElementById('wiz-health-warnings-badge');
+        const issuesContainer = document.getElementById('wiz-health-issues-container');
+        const warningsList = document.getElementById('wiz-health-warnings-list');
+        const recsList = document.getElementById('wiz-health-recommendations-list');
+        const healthCard = document.getElementById('card-scenario-health');
+
+        if (scoreEl) scoreEl.textContent = score;
+
+        let statusText = "Excellent";
+        let color = "#10B981"; // emerald
+        let bgLight = "rgba(16, 185, 129, 0.05)";
+        let borderCol = "rgba(16, 185, 129, 0.2)";
+        if (score < 50) {
+            statusText = "Poor";
+            color = "#EF4444"; // red
+            bgLight = "rgba(239, 68, 68, 0.05)";
+            borderCol = "rgba(239, 68, 68, 0.2)";
+        } else if (score < 70) {
+            statusText = "Fair";
+            color = "#F59E0B"; // amber
+            bgLight = "rgba(245, 158, 11, 0.05)";
+            borderCol = "rgba(245, 158, 11, 0.2)";
+        } else if (score < 90) {
+            statusText = "Good";
+            color = "#3B82F6"; // blue
+            bgLight = "rgba(59, 130, 246, 0.05)";
+            borderCol = "rgba(59, 130, 246, 0.2)";
+        }
+
+        if (statusTitle) statusTitle.textContent = `Status: ${statusText}`;
+        if (scoreCircle) {
+            scoreCircle.style.borderColor = color;
+            scoreCircle.style.color = color;
+        }
+        if (scoreEl) scoreEl.style.color = color;
+        if (scoreBar) {
+            scoreBar.style.width = `${score}%`;
+            scoreBar.style.backgroundColor = color;
+        }
+        if (warningsBadge) {
+            warningsBadge.textContent = `${warnings.length} Warning${warnings.length !== 1 ? 's' : ''}`;
+            warningsBadge.style.backgroundColor = color;
+        }
+        if (healthCard) {
+            healthCard.style.backgroundColor = bgLight;
+            healthCard.style.borderColor = borderCol;
+        }
+
+        if (warnings.length > 0) {
+            if (issuesContainer) issuesContainer.classList.remove('hide');
+            if (warningsList) {
+                warningsList.innerHTML = warnings.map(w => `<li>${w}</li>`).join('');
+            }
+            if (recsList) {
+                recsList.innerHTML = recommendations.map(r => `<li>${r}</li>`).join('');
+            }
+        } else {
+            if (issuesContainer) issuesContainer.classList.add('hide');
+        }
     }
 
     // Capture input updates for all inputs
@@ -1560,6 +1795,42 @@ document.addEventListener('DOMContentLoaded', () => {
             notes: document.getElementById('wiz-meta-notes')?.value || ""
         };
 
+        // Epic 2: Authentication Builder
+        let authObj = null;
+        const authType = document.getElementById('wiz-auth-type')?.value || 'none';
+        if (authType !== 'none') {
+            authObj = { type: authType };
+            if (authType === 'basic') {
+                authObj.username = document.getElementById('wiz-auth-basic-user').value;
+                authObj.password = document.getElementById('wiz-auth-basic-pass').value; // Masked in input
+            } else if (authType === 'bearer') {
+                authObj.token = document.getElementById('wiz-auth-bearer-token').value; // Masked in input
+            } else if (authType === 'apikey') {
+                authObj.header_name = document.getElementById('wiz-auth-apikey-name').value;
+                authObj.key_value = document.getElementById('wiz-auth-apikey-value').value; // Masked in input
+            } else if (authType === 'oauth2') {
+                authObj.token_url = document.getElementById('wiz-auth-oauth-url').value;
+                authObj.client_id = document.getElementById('wiz-auth-oauth-id').value;
+                authObj.client_secret = document.getElementById('wiz-auth-oauth-secret').value; // Masked in input
+                authObj.scope = document.getElementById('wiz-auth-oauth-scope').value;
+            }
+        }
+
+        // Epic 3: CSV Data Source
+        let dsObj = null;
+        if (uploadedCsvData) {
+            const mappingObj = {};
+            uploadedCsvData.variables.forEach(v => {
+                mappingObj[v] = `{{${v}}}`;
+            });
+            dsObj = {
+                type: "csv",
+                file_name: uploadedCsvData.fileName,
+                strategy: document.getElementById('wiz-csv-strategy').value,
+                mapping: mappingObj
+            };
+        }
+
         const payload = {
             name: scenName,
             protocol: activeWizProtocol,
@@ -1570,6 +1841,8 @@ document.addEventListener('DOMContentLoaded', () => {
             pacing_ms: pacing,
             slas: Object.keys(slas).length > 0 ? slas : undefined,
             metadata: metadata,
+            auth: authObj || undefined,
+            data_source: dsObj || undefined,
             config: configObj
         };
 
@@ -1582,7 +1855,15 @@ document.addEventListener('DOMContentLoaded', () => {
 
             const scen = await resp.json();
             if (resp.ok) {
-                txtDsl.value = JSON.stringify(scen, null, 2);
+                // Clone and mask credentials in displayed/exported DSL Editor
+                const displayScen = JSON.parse(JSON.stringify(scen));
+                if (displayScen.auth) {
+                    if (displayScen.auth.password) displayScen.auth.password = "********";
+                    if (displayScen.auth.token) displayScen.auth.token = "********";
+                    if (displayScen.auth.key_value) displayScen.auth.key_value = "********";
+                    if (displayScen.auth.client_secret) displayScen.auth.client_secret = "********";
+                }
+                txtDsl.value = JSON.stringify(displayScen, null, 2);
                 appendTerminalLine(`Generated scenario config using Wizard and loaded to editor.`, 'system-msg');
                 const specCard = document.querySelector('.config-card');
                 if (specCard) {

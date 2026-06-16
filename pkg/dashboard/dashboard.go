@@ -828,16 +828,18 @@ func (s *DashboardServer) handleWizardGenerate(w http.ResponseWriter, r *http.Re
 	}
 
 	var req struct {
-		Name            string                 `json:"name"`
-		Protocol        string                 `json:"protocol"`
-		TestType        string                 `json:"test_type"`
-		VUs             int                    `json:"vus"`
-		DurationSeconds int                    `json:"duration_seconds"`
-		RampUpSeconds   int                    `json:"ramp_up_seconds"`
-		PacingMs        int                    `json:"pacing_ms"`
-		SLAs            *scenario.SLAConfig    `json:"slas,omitempty"`
-		Metadata        map[string]string      `json:"metadata,omitempty"`
-		Config          map[string]interface{} `json:"config"`
+		Name            string                     `json:"name"`
+		Protocol        string                     `json:"protocol"`
+		TestType        string                     `json:"test_type"`
+		VUs             int                        `json:"vus"`
+		DurationSeconds int                        `json:"duration_seconds"`
+		RampUpSeconds   int                        `json:"ramp_up_seconds"`
+		PacingMs        int                        `json:"pacing_ms"`
+		SLAs            *scenario.SLAConfig        `json:"slas,omitempty"`
+		Metadata        map[string]string          `json:"metadata,omitempty"`
+		Auth            *scenario.AuthConfig       `json:"auth,omitempty"`
+		DataSource      *scenario.DataSourceConfig `json:"data_source,omitempty"`
+		Config          map[string]interface{}     `json:"config"`
 	}
 
 	if err := json.NewDecoder(r.Body).Decode(&req); err != nil {
@@ -896,6 +898,8 @@ func (s *DashboardServer) handleWizardGenerate(w http.ResponseWriter, r *http.Re
 		Scheduler:       req.TestType + "Scheduler",
 		SLAs:            req.SLAs,
 		Metadata:        req.Metadata,
+		Auth:            req.Auth,
+		DataSource:      req.DataSource,
 		Config:          req.Config,
 	}
 
