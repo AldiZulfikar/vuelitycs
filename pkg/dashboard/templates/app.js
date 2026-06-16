@@ -161,11 +161,11 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // ==========================================================================
-    // Chart.js Timeline Setups
+    // Chart.js Timeline Setups (wrapped in try-catch to isolate crashes)
     // ==========================================================================
 
     // Chart 1: Latency Timeline (Corrected vs Raw)
-    const ctxLatency = document.getElementById('chart-live-latency').getContext('2d');
+    const ctxLatency = (document.getElementById('chart-live-latency') || document.createElement('canvas')).getContext('2d');
     const chartLatency = new Chart(ctxLatency, {
         type: 'line',
         data: {
@@ -226,7 +226,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Chart 2: Throughput Timeline (RPS vs Time)
-    const ctxThroughput = document.getElementById('chart-live-throughput').getContext('2d');
+    const ctxThroughput = (document.getElementById('chart-live-throughput') || document.createElement('canvas')).getContext('2d');
     const chartThroughput = new Chart(ctxThroughput, {
         type: 'line',
         data: {
@@ -268,7 +268,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
 
     // Chart 3: Capacity Timeline (VUs vs Latency & Errors)
-    const ctxCapacity = document.getElementById('chart-live-capacity').getContext('2d');
+    const ctxCapacity = (document.getElementById('chart-live-capacity') || document.createElement('canvas')).getContext('2d');
     const chartCapacity = new Chart(ctxCapacity, {
         type: 'line',
         data: {
@@ -348,7 +348,7 @@ document.addEventListener('DOMContentLoaded', () => {
     let currentPlannedVUs = 0;
 
     // Chart 4: Workload Profile (Target VUs vs Time)
-    const ctxWorkload = document.getElementById('chart-live-workload').getContext('2d');
+    const ctxWorkload = (document.getElementById('chart-live-workload') || document.createElement('canvas')).getContext('2d');
     const chartWorkload = new Chart(ctxWorkload, {
         type: 'line',
         data: {
@@ -527,12 +527,14 @@ document.addEventListener('DOMContentLoaded', () => {
 
         sseSource.onopen = () => {
             lblEngineStatus.textContent = "Vuelitycs (Connected)";
-            lblEngineStatus.parentElement.querySelector('.status-indicator').className = "status-indicator online";
+            const indicator = lblEngineStatus.closest('.system-status')?.querySelector('.status-indicator');
+            if (indicator) indicator.className = "status-indicator online";
         };
 
         sseSource.onerror = () => {
             lblEngineStatus.textContent = "Connection Lost. Retrying...";
-            lblEngineStatus.parentElement.querySelector('.status-indicator').className = "status-indicator offline";
+            const indicator = lblEngineStatus.closest('.system-status')?.querySelector('.status-indicator');
+            if (indicator) indicator.className = "status-indicator offline";
         };
 
         sseSource.onmessage = (event) => {
@@ -1103,8 +1105,9 @@ document.addEventListener('DOMContentLoaded', () => {
     }
 
     // ==========================================================================
-    // Scenario Wizard Logic
+    // Scenario Wizard Logic (isolated in try-catch)
     // ==========================================================================
+    try {
     let activeWizProtocol = 'HTTP';
     let activeWizTestType = 'LOAD';
 
@@ -1649,23 +1652,67 @@ document.addEventListener('DOMContentLoaded', () => {
         }
     }
 
+    function getSuggestedTemplates(proto, method, auth, type) {
+        const list = [];
+        if (proto === 'HTTP') {
+            if (method === 'POST' && (auth === 'basic' || auth === 'bearer' || auth === 'oauth2')) {
+                list.push({ id: 'login-api', name: 'Login API Load Test' });
+            }
+            if (method === 'POST' || method === 'PUT' || method === 'DELETE') {
+                list.push({ id: 'checkout-stress', name: 'Checkout Stress Test' });
+            }
+            list.push({ id: 'search-api', name: 'Search API Load Test' });
+            if (auth !== 'none') {
+                list.push({ id: 'login-api', name: 'Login API Load Test' });
+            }
+        } else if (proto === 'Kafka') {
+            list.push({ id: 'kafka-producer', name: 'Kafka Producer Benchmark' });
+            list.push({ id: 'kafka-consumer', name: 'Kafka Consumer Benchmark' });
+        } else if (proto === 'Database') {
+            list.push({ id: 'db-bench', name: 'Database Benchmark' });
+        } else if (proto === 'Browser') {
+            list.push({ id: 'browser-audit', name: 'Browser Performance Audit' });
+        }
+        return list;
+    }
+
     // Epic 4: Scenario Preview
     function updatePreview() {
-        const vus = parseInt(document.getElementById('wiz-vus').value) || 0;
-        const durInput = parseInt(document.getElementById('wiz-duration').value) || 0;
-        const durUnit = document.getElementById('wiz-duration-unit').value;
+        const vusEl = document.getElementById('wiz-vus');
+        const vus = vusEl ? (parseInt(vusEl.value) || 0) : 0;
+        
+        const durInputEl = document.getElementById('wiz-duration');
+        const durInput = durInputEl ? (parseInt(durInputEl.value) || 0) : 0;
+        
+        const durUnitEl = document.getElementById('wiz-duration-unit');
+        const durUnit = durUnitEl ? durUnitEl.value : 'sec';
+        
         const dur = durUnit === 'min' ? durInput * 60 : durInput;
-        const ramp = parseInt(document.getElementById('wiz-ramp-up').value) || 0;
-        const pacing = parseInt(document.getElementById('wiz-pacing').value) || 100;
+        
+        const rampEl = document.getElementById('wiz-ramp-up');
+        const ramp = rampEl ? (parseInt(rampEl.value) || 0) : 0;
+        
+        const pacingEl = document.getElementById('wiz-pacing');
+        const pacing = pacingEl ? (parseInt(pacingEl.value) || 100) : 100;
+        
         const estPeakRPS = Math.round((vus / (pacing / 1000)));
         
-        const p95 = document.getElementById('wiz-sla-p95').value.trim();
-        const p99 = document.getElementById('wiz-sla-p99').value.trim();
-        const errRate = document.getElementById('wiz-sla-error').value;
-        const minRps = document.getElementById('wiz-sla-rps').value;
+        const p95El = document.getElementById('wiz-sla-p95');
+        const p95 = p95El ? p95El.value.trim() : '';
+        
+        const p99El = document.getElementById('wiz-sla-p99');
+        const p99 = p99El ? p99El.value.trim() : '';
+        
+        const errRateEl = document.getElementById('wiz-sla-error');
+        const errRate = errRateEl ? errRateEl.value : '';
+        
+        const minRpsEl = document.getElementById('wiz-sla-rps');
+        const minRps = minRpsEl ? minRpsEl.value : '';
+        
         const hasSla = p95 || p99 || errRate || minRps;
 
-        const scenName = document.getElementById('wiz-scenario-name').value || "Wizard Generated Test";
+        const scenNameEl = document.getElementById('wiz-scenario-name');
+        const scenName = scenNameEl ? (scenNameEl.value || "Wizard Generated Test") : "Wizard Generated Test";
         
         const previewText = `• Scenario Name: ${scenName}
 • Protocol: ${activeWizProtocol}
@@ -1675,38 +1722,83 @@ document.addEventListener('DOMContentLoaded', () => {
 • SLAs Configured: ${hasSla ? 'Yes' : 'No'}`;
 
         const previewEl = document.getElementById('wiz-preview-text');
-        if(previewEl) previewEl.textContent = previewText;
+        if (previewEl) previewEl.textContent = previewText;
 
         // Draw profile estimate graph
         drawWorkloadProfile();
 
-        // Epic 1: Rule Engine & Health Assessment
-        let score = 100;
-        const warnings = [];
-        const recommendations = [];
+        // Epic 1: Health Breakdown & Real-Time Input Validation
+        let scoreBreakdown = [];
+        let warnings = [];
+        let recommendations = [];
         let hasErrors = false;
 
-        // Epic 1: Real-Time Input Validation
-        // URL validation (HTTP / Browser only)
+        // URL / broker / DSN configuration check
+        let targetUrl = "-";
+        let httpMethod = "-";
+
         if (activeWizProtocol === 'HTTP') {
-            const urlVal = document.getElementById('wiz-http-url').value.trim();
-            if (!urlVal.startsWith('http://') && !urlVal.startsWith('https://')) {
+            const urlValEl = document.getElementById('wiz-http-url');
+            const urlVal = urlValEl ? urlValEl.value.trim() : '';
+            targetUrl = urlVal || "-";
+            httpMethod = document.getElementById('wiz-http-method')?.value || "GET";
+            
+            if (!urlVal) {
                 hasErrors = true;
-                setValidationStyle('wiz-http-url', 'error');
+                if (urlValEl) setValidationStyle('wiz-http-url', 'error');
+                warnings.push("Target URL is empty.");
+                scoreBreakdown.push({ val: -20, text: "Target URL Empty" });
+            } else if (!urlVal.startsWith('http://') && !urlVal.startsWith('https://')) {
+                hasErrors = true;
+                if (urlValEl) setValidationStyle('wiz-http-url', 'error');
                 warnings.push("Target URL must start with http:// or https:// (e.g. https://api.company.com)");
-                score -= 20;
+                scoreBreakdown.push({ val: -20, text: "Target URL Invalid" });
             } else {
-                setValidationStyle('wiz-http-url', 'success');
+                if (urlValEl) setValidationStyle('wiz-http-url', 'success');
+                scoreBreakdown.push({ val: 20, text: "URL Valid" });
             }
         } else if (activeWizProtocol === 'Browser') {
-            const urlVal = document.getElementById('wiz-browser-url').value.trim();
-            if (!urlVal.startsWith('http://') && !urlVal.startsWith('https://')) {
+            const urlValEl = document.getElementById('wiz-browser-url');
+            const urlVal = urlValEl ? urlValEl.value.trim() : '';
+            targetUrl = urlVal || "-";
+            
+            if (!urlVal) {
                 hasErrors = true;
-                setValidationStyle('wiz-browser-url', 'error');
+                if (urlValEl) setValidationStyle('wiz-browser-url', 'error');
+                warnings.push("Browser Target URL is empty.");
+                scoreBreakdown.push({ val: -20, text: "Browser URL Empty" });
+            } else if (!urlVal.startsWith('http://') && !urlVal.startsWith('https://')) {
+                hasErrors = true;
+                if (urlValEl) setValidationStyle('wiz-browser-url', 'error');
                 warnings.push("Browser Target URL must start with http:// or https://");
-                score -= 20;
+                scoreBreakdown.push({ val: -20, text: "Browser URL Invalid" });
             } else {
-                setValidationStyle('wiz-browser-url', 'success');
+                if (urlValEl) setValidationStyle('wiz-browser-url', 'success');
+                scoreBreakdown.push({ val: 20, text: "URL Valid" });
+            }
+        } else if (activeWizProtocol === 'Kafka') {
+            const brokersEl = document.getElementById('wiz-kafka-brokers');
+            targetUrl = brokersEl ? brokersEl.value.trim() : '';
+            if (!targetUrl) {
+                hasErrors = true;
+                if (brokersEl) setValidationStyle('wiz-kafka-brokers', 'error');
+                warnings.push("Kafka Brokers list is empty.");
+                scoreBreakdown.push({ val: -20, text: "Kafka Brokers Missing" });
+            } else {
+                if (brokersEl) setValidationStyle('wiz-kafka-brokers', 'success');
+                scoreBreakdown.push({ val: 20, text: "Kafka Brokers Configured" });
+            }
+        } else if (activeWizProtocol === 'Database') {
+            const dsnEl = document.getElementById('wiz-db-dsn');
+            targetUrl = dsnEl ? dsnEl.value.trim() : '';
+            if (!targetUrl) {
+                hasErrors = true;
+                if (dsnEl) setValidationStyle('wiz-db-dsn', 'error');
+                warnings.push("Database DSN is empty.");
+                scoreBreakdown.push({ val: -20, text: "Database DSN Missing" });
+            } else {
+                if (dsnEl) setValidationStyle('wiz-db-dsn', 'success');
+                scoreBreakdown.push({ val: 20, text: "Database DSN Configured" });
             }
         }
 
@@ -1715,9 +1807,10 @@ document.addEventListener('DOMContentLoaded', () => {
             hasErrors = true;
             setValidationStyle('wiz-vus', 'error');
             warnings.push("Target VUs must be greater than 0.");
-            score -= 25;
+            scoreBreakdown.push({ val: -25, text: "Target VUs <= 0" });
         } else {
             setValidationStyle('wiz-vus', 'success');
+            scoreBreakdown.push({ val: 20, text: "Workload VUs Configured" });
         }
 
         // Duration / Ramp up Validation
@@ -1725,46 +1818,82 @@ document.addEventListener('DOMContentLoaded', () => {
             hasErrors = true;
             setValidationStyle('wiz-duration', 'error');
             warnings.push("Duration must be greater than 0.");
-            score -= 20;
+            scoreBreakdown.push({ val: -20, text: "Duration <= 0" });
         } else if (dur < ramp) {
             hasErrors = true;
             setValidationStyle('wiz-duration', 'error');
             warnings.push(`Duration (${dur}s) must be greater than or equal to Ramp Up (${ramp}s).`);
-            score -= 20;
+            scoreBreakdown.push({ val: -20, text: "Duration < Ramp Up" });
         } else {
             setValidationStyle('wiz-duration', 'success');
-            
-            // Standard warnings (non-blocking)
-            if (activeWizTestType === 'LOAD' && dur < 300) {
-                warnings.push("Load test duration is too short (< 300 seconds).");
-                recommendations.push("Increase duration to 300 seconds (5 minutes) or more for standard load testing.");
-                score -= 10;
-            } else if (activeWizTestType === 'SOAK' && dur < 3600) {
-                warnings.push("Soak test duration is too short (< 3600 seconds).");
-                recommendations.push("Increase duration to 3600 seconds (1 hour) or more to identify long-term degradation.");
-                score -= 10;
-            }
+            scoreBreakdown.push({ val: 20, text: "Duration Valid" });
         }
 
-        // Threshold P95 < P99 Validation
+        // Authentication Validation
+        let authValid = true;
+        const authType = document.getElementById('wiz-auth-type')?.value || 'none';
+        if (authType === 'basic') {
+            const user = document.getElementById('wiz-auth-basic-user')?.value.trim();
+            const pass = document.getElementById('wiz-auth-basic-pass')?.value.trim();
+            if (!user || !pass) authValid = false;
+        } else if (authType === 'bearer') {
+            const token = document.getElementById('wiz-auth-bearer-token')?.value.trim();
+            if (!token) authValid = false;
+        } else if (authType === 'apikey') {
+            const name = document.getElementById('wiz-auth-apikey-name')?.value.trim();
+            const val = document.getElementById('wiz-auth-apikey-value')?.value.trim();
+            if (!name || !val) authValid = false;
+        } else if (authType === 'oauth2') {
+            const url = document.getElementById('wiz-auth-oauth-url')?.value.trim();
+            const id = document.getElementById('wiz-auth-oauth-id')?.value.trim();
+            const sec = document.getElementById('wiz-auth-oauth-secret')?.value.trim();
+            if (!url || !id || !sec) authValid = false;
+        }
+        if (authValid) {
+            scoreBreakdown.push({ val: 20, text: "Authentication Valid" });
+        } else {
+            hasErrors = true;
+            warnings.push("Missing required authentication credentials.");
+            scoreBreakdown.push({ val: -20, text: "Authentication Incomplete" });
+        }
+
+        // Metadata Validation
+        const metaEnv = document.getElementById('wiz-meta-env')?.value || '';
+        const metaVersion = document.getElementById('wiz-meta-version')?.value || '';
+        if (metaEnv && metaVersion) {
+            scoreBreakdown.push({ val: 20, text: "Metadata Complete" });
+        } else {
+            scoreBreakdown.push({ val: -10, text: "Metadata Incomplete" });
+        }
+
+        // SLA Check (non-blocking)
+        if (hasSla) {
+            scoreBreakdown.push({ val: 20, text: "SLA Thresholds Present" });
+        } else {
+            warnings.push("SLA thresholds are missing.");
+            recommendations.push("Configure SLA targets (P95/P99) to establish automatic pass/fail tracking.");
+            scoreBreakdown.push({ val: -10, text: "SLA Thresholds Missing" });
+        }
+
+        // P95 / P99 Target Check
         if (p95 && p99 && parseFloat(p95) >= parseFloat(p99)) {
             hasErrors = true;
             setValidationStyle('wiz-sla-p95', 'error');
             setValidationStyle('wiz-sla-p99', 'error');
-            warnings.push("SLA target P95 Latency must be less than P99 Latency.");
-            score -= 15;
+            warnings.push("SLA target conflict: P95 Latency must be less than P99 Latency.");
+            scoreBreakdown.push({ val: -15, text: "SLA Threshold conflict" });
         } else {
             if (p95) setValidationStyle('wiz-sla-p95', 'success');
             if (p99) setValidationStyle('wiz-sla-p99', 'success');
         }
 
-        // CSV strategy selection and upload validation
+        // CSV Strategy validation
         const csvStrategy = document.getElementById('wiz-csv-strategy')?.value || 'sequential';
         if (csvStrategy !== 'sequential' && !uploadedCsvData) {
             hasErrors = true;
             setValidationStyle('wiz-csv-strategy', 'error');
             warnings.push("Data-driven strategy selected but no CSV file uploaded.");
-            score -= 15;
+            scoreBreakdown.push({ val: -15, text: "Data-driven CSV Missing" });
         } else {
             if (uploadedCsvData) {
                 setValidationStyle('wiz-csv-strategy', 'success');
@@ -1773,41 +1902,59 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 2. SLA check (non-blocking)
-        if (!hasSla) {
-            warnings.push("SLA thresholds are missing.");
-            recommendations.push("Configure at least one SLA target (e.g. P95 Latency or Max Error Rate) to establish pass/fail validation.");
-            score -= 15;
+        // Scenario Risk Analyzer (Epic 6)
+        let risks = [];
+        if (dur > 0) {
+            if (activeWizTestType === 'LOAD' && dur < 300) {
+                risks.push("Load test duration is too short (< 300 seconds) for realistic analysis.");
+                scoreBreakdown.push({ val: -15, text: "Duration < 300 sec" });
+            } else if (activeWizTestType === 'SOAK' && dur < 3600) {
+                risks.push("Soak test duration is too short (< 3600 seconds) to detect memory leaks.");
+                scoreBreakdown.push({ val: -15, text: "Duration too short (< 3600s)" });
+            }
         }
 
-        // 3. Ramp Up check (non-blocking)
         if (ramp <= 0) {
-            warnings.push("Ramp-up duration is not configured.");
-            recommendations.push("Set a ramp-up duration to ease simulated virtual users onto the target environment.");
-            score -= 10;
+            risks.push("No ramp-up configured. Simulated users will shock the target instantly.");
+            scoreBreakdown.push({ val: -10, text: "Missing ramp-up period" });
         } else if (activeWizTestType === 'LOAD' && ramp < (0.10 * dur)) {
-            warnings.push("Load test ramp-up is less than 10% of total duration.");
-            recommendations.push(`Increase ramp-up duration to at least ${Math.ceil(0.10 * dur)}s to prevent extreme baseline shocks.`);
-            score -= 10;
+            risks.push(`Ramp-up is too aggressive (${ramp}s is < 10% of total duration).`);
+            scoreBreakdown.push({ val: -15, text: "Aggressive workload ramp-up" });
         } else if (activeWizTestType === 'SPIKE' && ramp > 30) {
-            warnings.push("Spike test ramp-up is too slow (> 30 seconds).");
-            recommendations.push("Decrease ramp-up to 30 seconds or less to simulate an abrupt surge of users.");
-            score -= 10;
+            risks.push("Spike ramp-up is too slow (> 30s) to simulate a true spike.");
+            scoreBreakdown.push({ val: -10, text: "Slow spike ramp-up" });
+        } else if (activeWizTestType === 'SPIKE' && ramp < 10) {
+            risks.push("Spike ramp-up is extremely sharp (< 10s), risk of engine network saturation.");
+            scoreBreakdown.push({ val: -15, text: "Extremely sharp spike" });
         }
 
-        // 4. Stress workload check (non-blocking)
-        if (vus > 0 && activeWizTestType === 'STRESS') {
-            if (vus <= 50) {
-                warnings.push("Stress test Target VUs (50 or less) might be too low to exceed baseline capacity.");
-                recommendations.push("Increase target VUs above typical baseline capacity (> 50 VUs) to push system limits.");
-                score -= 15;
-            }
-            if (!errRate && !p95 && !p99) {
-                warnings.push("Critical SLA threshold (latency or error rate) is not configured for Stress Test.");
-                recommendations.push("Specify a critical latency or error threshold to catch saturation limits under stress.");
+        if (activeWizProtocol === 'HTTP' && targetUrl.startsWith('http://')) {
+            risks.push("Insecure HTTP protocol used instead of HTTPS.");
+            scoreBreakdown.push({ val: -10, text: "Insecure target URL" });
+        }
+
+        if (activeWizProtocol === 'Browser' && vus > 10) {
+            risks.push(`High Browser virtual user load (${vus} VUs) exceeds typical engine resource capacity.`);
+            scoreBreakdown.push({ val: -15, text: "Browser VUs too high" });
+        } else if (vus > 200) {
+            risks.push(`High virtual user load (${vus} VUs) exceeds typical single node limit.`);
+            scoreBreakdown.push({ val: -10, text: "High user volume load" });
+        }
+
+        if (uploadedCsvData) {
+            const rows = uploadedCsvData.rows || 0;
+            if (rows < vus) {
+                risks.push(`CSV dataset contains only ${rows} records for ${vus} VUs. Data reuse collisions will happen.`);
+                scoreBreakdown.push({ val: -15, text: "CSV rows < target VUs" });
             }
         }
 
+        if (activeWizTestType === 'SPIKE') {
+            risks.push("Spike test workload profile: sudden load changes may saturate engine network interfaces.");
+        }
+
+        // Calculate and clamp Health Score
+        let score = scoreBreakdown.reduce((sum, item) => sum + item.val, 0);
         score = Math.max(0, Math.min(100, score));
 
         // Render Health Card
@@ -1816,32 +1963,29 @@ document.addEventListener('DOMContentLoaded', () => {
         const scoreBar = document.getElementById('wiz-health-score-bar');
         const statusTitle = document.getElementById('wiz-health-status-title');
         const warningsBadge = document.getElementById('wiz-health-warnings-badge');
-        const issuesContainer = document.getElementById('wiz-health-issues-container');
-        const warningsList = document.getElementById('wiz-health-warnings-list');
-        const recsList = document.getElementById('wiz-health-recommendations-list');
         const healthCard = document.getElementById('card-scenario-health');
 
         if (scoreEl) scoreEl.textContent = score;
 
         let statusText = "Excellent";
         let color = "#10B981"; // emerald
-        let bgLight = "rgba(16, 185, 129, 0.05)";
-        let borderCol = "rgba(16, 185, 129, 0.2)";
+        let bgLight = "rgba(16, 185, 129, 0.02)";
+        let borderCol = "rgba(16, 185, 129, 0.08)";
         if (score < 50) {
             statusText = "Poor";
             color = "#EF4444"; // red
-            bgLight = "rgba(239, 68, 68, 0.05)";
-            borderCol = "rgba(239, 68, 68, 0.2)";
+            bgLight = "rgba(239, 68, 68, 0.03)";
+            borderCol = "rgba(239, 68, 68, 0.15)";
         } else if (score < 70) {
             statusText = "Fair";
             color = "#F59E0B"; // amber
-            bgLight = "rgba(245, 158, 11, 0.05)";
-            borderCol = "rgba(245, 158, 11, 0.2)";
+            bgLight = "rgba(245, 158, 11, 0.03)";
+            borderCol = "rgba(245, 158, 11, 0.15)";
         } else if (score < 90) {
             statusText = "Good";
             color = "#3B82F6"; // blue
-            bgLight = "rgba(59, 130, 246, 0.05)";
-            borderCol = "rgba(59, 130, 246, 0.2)";
+            bgLight = "rgba(59, 130, 246, 0.03)";
+            borderCol = "rgba(59, 130, 246, 0.15)";
         }
 
         if (statusTitle) statusTitle.textContent = `Status: ${statusText}`;
@@ -1863,19 +2007,25 @@ document.addEventListener('DOMContentLoaded', () => {
             healthCard.style.borderColor = borderCol;
         }
 
-        if (warnings.length > 0) {
-            if (issuesContainer) issuesContainer.classList.remove('hide');
-            if (warningsList) {
-                warningsList.innerHTML = warnings.map(w => `<li>${w}</li>`).join('');
-            }
-            if (recsList) {
-                recsList.innerHTML = recommendations.map(r => `<li>${r}</li>`).join('');
-            }
-        } else {
-            if (issuesContainer) issuesContainer.classList.add('hide');
+        // Render Health Breakdown list
+        const breakdownListEl = document.getElementById('wiz-health-breakdown-list');
+        if (breakdownListEl) {
+            breakdownListEl.innerHTML = scoreBreakdown.map(item => {
+                const isPositive = item.val >= 0;
+                const itemColor = isPositive ? '#34D399' : '#F87171';
+                const prefix = isPositive ? '+' : '';
+                return `<li style="color: ${itemColor}; display: flex; justify-content: space-between; margin-bottom: 0.2rem;">
+                    <span>${item.text}</span>
+                    <span>${prefix}${item.val}</span>
+                </li>`;
+            }).join('') + `
+            <li style="border-top: 1px dashed rgba(255,255,255,0.15); margin-top: 0.4rem; padding-top: 0.4rem; font-weight: bold; color: var(--text-main); display: flex; justify-content: space-between; font-size: 0.75rem;">
+                <span>Final Score</span>
+                <span style="color: ${color}">${score}</span>
+            </li>`;
         }
 
-        // Disable / Enable Generate Button if there are critical errors
+        // Disable / Enable Wizard Generate Button if there are critical errors
         const genBtn = document.getElementById('btn-wizard-generate');
         if (genBtn) {
             genBtn.disabled = hasErrors;
@@ -1890,21 +2040,56 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // Epic 2: Scenario Complexity Score
-        const authType = document.getElementById('wiz-auth-type')?.value || 'none';
-        const vuWeight = Math.min(40, vus * 0.1);
-        const csvWeight = uploadedCsvData ? 20 : 0;
-        const authWeight = authType !== 'none' ? 15 : 0;
-        const durationWeight = Math.min(25, dur / 30);
-        const complexityScore = Math.round(9 + vuWeight + csvWeight + authWeight + durationWeight);
+        // Epic 2: Scenario Complexity Score Breakdown
+        let compBreakdown = [];
+        if (activeWizProtocol === 'HTTP') {
+            compBreakdown.push({ val: 5, text: "Protocol HTTP" });
+        } else if (activeWizProtocol === 'Browser') {
+            compBreakdown.push({ val: 15, text: "Protocol Browser (CDP)" });
+        } else if (activeWizProtocol === 'Kafka') {
+            compBreakdown.push({ val: 10, text: "Protocol Kafka Broker" });
+        } else if (activeWizProtocol === 'Database') {
+            compBreakdown.push({ val: 10, text: "Protocol Database Query" });
+        }
+
+        if (activeWizProtocol === 'HTTP') {
+            const method = document.getElementById('wiz-http-method')?.value || 'GET';
+            if (method !== 'GET') {
+                compBreakdown.push({ val: 5, text: `${method} Payload` });
+            }
+        }
+
+        if (authType !== 'none') {
+            compBreakdown.push({ val: 5, text: "Authentication" });
+        }
+
+        if (uploadedCsvData) {
+            compBreakdown.push({ val: 5, text: "Data Driven CSV Source" });
+        }
+
+        if (vus > 500) {
+            compBreakdown.push({ val: 25, text: `${vus} Concurrent Users` });
+        } else if (vus > 200) {
+            compBreakdown.push({ val: 15, text: `${vus} Concurrent Users` });
+        } else if (vus > 75) {
+            compBreakdown.push({ val: 10, text: `${vus} Concurrent Users` });
+        } else if (vus > 0) {
+            compBreakdown.push({ val: 5, text: `${vus} Concurrent Users` });
+        }
+
+        if (metaEnv || metaVersion) {
+            compBreakdown.push({ val: 4, text: "Metadata" });
+        }
+
+        const complexityScore = compBreakdown.reduce((sum, item) => sum + item.val, 0);
         const cappedComplexityScore = Math.min(100, complexityScore);
 
         let complexityLevel = "LOW";
         let complexityColor = "#10B981"; // emerald
-        if (cappedComplexityScore >= 70) {
+        if (cappedComplexityScore >= 40) {
             complexityLevel = "HIGH";
             complexityColor = "#EF4444"; // red
-        } else if (cappedComplexityScore >= 30) {
+        } else if (cappedComplexityScore >= 20) {
             complexityLevel = "MEDIUM";
             complexityColor = "#F59E0B"; // amber
         }
@@ -1921,43 +2106,111 @@ document.addEventListener('DOMContentLoaded', () => {
             compCard.style.borderColor = complexityColor + "33"; // 20% alpha
         }
 
-        // Epic 3: Workload Recommendation
-        let recCpuRam = "2 CPU / 2 GB RAM";
+        // Render Complexity Breakdown list
+        const compBreakdownListEl = document.getElementById('wiz-complexity-breakdown-list');
+        if (compBreakdownListEl) {
+            compBreakdownListEl.innerHTML = compBreakdown.map(item => `
+                <li style="color: var(--text-muted); display: flex; justify-content: space-between; margin-bottom: 0.2rem;">
+                    <span>${item.text}</span>
+                    <span style="color: #C084FC;">+${item.val}</span>
+                </li>
+            `).join('') + `
+            <li style="border-top: 1px dashed rgba(255,255,255,0.15); margin-top: 0.4rem; padding-top: 0.4rem; font-weight: bold; color: var(--text-main); display: flex; justify-content: space-between; font-size: 0.75rem;">
+                <span>Total Index</span>
+                <span style="color: ${complexityColor}">${cappedComplexityScore}</span>
+            </li>`;
+        }
+
+        // Epic 6: Scenario Risk Analyzer
+        const risksListEl = document.getElementById('wiz-risks-list');
+        const risksCard = document.getElementById('card-scenario-risks');
+        if (risksListEl) {
+            if (risks.length === 0) {
+                risksListEl.innerHTML = '<li style="color: #34D399; list-style-type: none; margin-left: -1.2rem;">✓ No performance risks detected</li>';
+                if (risksCard) risksCard.classList.add('hide');
+            } else {
+                risksListEl.innerHTML = risks.map(r => `<li style="margin-bottom: 0.25rem;">⚠️ ${r}</li>`).join('');
+                if (risksCard) risksCard.classList.remove('hide');
+            }
+        }
+
+        // Epic 5: Capacity Forecast & Formulas
+        let recCpuRam = "1 CPU / 1 GB RAM";
+        let ramFormulaText = "";
+        let rpsFormulaText = "";
+
         if (activeWizProtocol === 'Browser') {
+            ramFormulaText = `${vus} VU * 400 MB = ${(vus * 400).toLocaleString()} MB RAM`;
             if (vus <= 20) {
                 recCpuRam = "4 CPU / 8 GB RAM";
             } else {
                 recCpuRam = "8 CPU / 16 GB RAM";
             }
         } else {
+            ramFormulaText = `${vus} VU * 25 MB = ${(vus * 25).toLocaleString()} MB RAM`;
             if (vus <= 100) {
-                recCpuRam = "2 CPU / 2 GB RAM";
+                recCpuRam = "1 CPU / 1 GB RAM";
             } else if (vus <= 500) {
+                recCpuRam = "2 CPU / 2 GB RAM";
+            } else if (vus <= 1000) {
                 recCpuRam = "4 CPU / 8 GB RAM";
             } else {
                 recCpuRam = "8 CPU / 16 GB RAM";
             }
         }
 
+        const pacingSec = pacing / 1000;
+        rpsFormulaText = `${vus} VU / ${pacingSec} sec = ${estPeakRPS} RPS`;
+
+        // Update forecast elements
         const recEngineEl = document.getElementById('rec-engine-capacity');
         const recPeakRpsEl = document.getElementById('rec-peak-rps');
         if (recEngineEl) recEngineEl.textContent = recCpuRam;
-        if (recPeakRpsEl) recPeakRpsEl.textContent = `~${estPeakRPS.toLocaleString()} req/sec`;
+        if (recPeakRpsEl) recPeakRpsEl.textContent = `~${estPeakRPS.toLocaleString()} RPS`;
 
-        // Epic 7: Wizard Summary Report Card
-        let targetUrl = "-";
-        let httpMethod = "-";
-        if (activeWizProtocol === 'HTTP') {
-            targetUrl = document.getElementById('wiz-http-url')?.value || "-";
-            httpMethod = document.getElementById('wiz-http-method')?.value || "GET";
-        } else if (activeWizProtocol === 'Browser') {
-            targetUrl = document.getElementById('wiz-browser-url')?.value || "-";
-        } else if (activeWizProtocol === 'Kafka') {
-            targetUrl = document.getElementById('wiz-kafka-brokers')?.value || "-";
-        } else if (activeWizProtocol === 'Database') {
-            targetUrl = document.getElementById('wiz-db-dsn')?.value || "-";
+        // Render Capacity Forecast explanation inside Pre-Deployment Report
+        const forecastDetailEl = document.getElementById('summary-forecast-detail');
+        if (forecastDetailEl) {
+            forecastDetailEl.innerHTML = `Target VU : ${vus}
+Think Time : ${pacing} ms
+
+Predicted Peak RPS:
+${vus} / ${pacingSec} sec
+= ${estPeakRPS} RPS
+
+Engine Recommendation:
+${vus} VU × ${activeWizProtocol === 'Browser' ? '400 MB' : '25 MB'}
+≈ ${activeWizProtocol === 'Browser' ? (vus * 400 / 1024).toFixed(1) + ' GB' : (vus * 25 / 1024).toFixed(1) + ' GB'} RAM
+
+Recommended:
+${recCpuRam}`;
         }
 
+        // Epic 7: Suggested Templates List
+        const suggestedListEl = document.getElementById('wiz-suggested-templates-list');
+        if (suggestedListEl) {
+            const suggestions = getSuggestedTemplates(activeWizProtocol, httpMethod, authType, activeWizTestType);
+            if (suggestions.length === 0) {
+                suggestedListEl.innerHTML = '<li style="list-style-type: none; margin-left: -1.2rem; color: var(--text-muted);">No suggestions matching configurations</li>';
+            } else {
+                suggestedListEl.innerHTML = suggestions.map(t => `
+                    <li style="margin-bottom: 0.3rem; list-style-type: none; margin-left: -1.2rem;">
+                        <span class="badge badge-purple" style="cursor: pointer; padding: 0.2rem 0.5rem; border: 1px solid rgba(139, 92, 246, 0.4);" data-template-id="${t.id}">✦ ${t.name}</span>
+                    </li>
+                `).join('');
+                suggestedListEl.querySelectorAll('[data-template-id]').forEach(el => {
+                    el.addEventListener('click', () => {
+                        const tid = el.getAttribute('data-template-id');
+                        if (wizTemplate) {
+                            wizTemplate.value = tid;
+                            wizTemplate.dispatchEvent(new Event('change'));
+                        }
+                    });
+                });
+            }
+        }
+
+        // Epic 8: Pre-deployment Report Panel updates
         const sumProto = document.getElementById('summary-proto');
         const sumMethod = document.getElementById('summary-method');
         const sumTarget = document.getElementById('summary-target');
@@ -1966,8 +2219,11 @@ document.addEventListener('DOMContentLoaded', () => {
         const sumTestType = document.getElementById('summary-testtype');
         const sumVus = document.getElementById('summary-vus');
         const sumDuration = document.getElementById('summary-duration');
-        const sumForecastRps = document.getElementById('summary-forecast-rps');
-        const sumForecastEngine = document.getElementById('summary-forecast-engine');
+        
+        const sumHealthScore = document.getElementById('summary-health');
+        const sumComplexityLevel = document.getElementById('summary-complexity');
+        const sumDeployStatus = document.getElementById('summary-deploy-status');
+        const sumRiskText = document.getElementById('summary-risk-text');
 
         if (sumProto) sumProto.textContent = activeWizProtocol;
         if (sumMethod) sumMethod.textContent = activeWizProtocol === 'HTTP' ? httpMethod : "-";
@@ -1977,8 +2233,81 @@ document.addEventListener('DOMContentLoaded', () => {
         if (sumTestType) sumTestType.textContent = activeWizTestType;
         if (sumVus) sumVus.textContent = `${vus} VUs`;
         if (sumDuration) sumDuration.textContent = `${dur} sec (${durUnit === 'min' ? durInput + 'm' : durInput + 's'})`;
-        if (sumForecastRps) sumForecastRps.textContent = `~${estPeakRPS.toLocaleString()} RPS`;
-        if (sumForecastEngine) sumForecastEngine.textContent = recCpuRam;
+        
+        if (sumHealthScore) {
+            sumHealthScore.textContent = `${score} (${statusText})`;
+            sumHealthScore.style.color = color;
+        }
+        if (sumComplexityLevel) {
+            sumComplexityLevel.textContent = `${cappedComplexityScore} (${complexityLevel})`;
+            sumComplexityLevel.style.color = complexityColor;
+        }
+
+        // Determine Pre-Deployment Gate Status
+        let deployStatusText = "READY";
+        let deployStatusColor = "#10B981"; // green
+        
+        let blockingReasonsList = [];
+        if (hasErrors) {
+            deployStatusText = "BLOCKED";
+            deployStatusColor = "#EF4444"; // red
+            if (!targetUrl || targetUrl === "-") blockingReasonsList.push("Target URL is missing");
+            if (activeWizProtocol === 'HTTP' && !targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) blockingReasonsList.push("Invalid URL format");
+            if (activeWizProtocol === 'Browser' && !targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) blockingReasonsList.push("Invalid Browser target URL format");
+            if (vus <= 0) blockingReasonsList.push("Virtual User count must be greater than 0");
+            if (dur <= 0) blockingReasonsList.push("Duration must be greater than 0");
+            if (dur < ramp) blockingReasonsList.push("Duration cannot be less than Ramp Up time");
+            if (!authValid) blockingReasonsList.push("Missing required fields for authentication configuration");
+            if (csvStrategy !== 'sequential' && !uploadedCsvData) blockingReasonsList.push("CSV strategy configured but no CSV dataset loaded");
+        } else if (warnings.length > 0 || score < 80) {
+            if (score < 60) {
+                deployStatusText = "BLOCKED";
+                deployStatusColor = "#EF4444";
+                blockingReasonsList.push(`Health score (${score}) is below deployment threshold (60)`);
+            } else {
+                deployStatusText = "READY WITH WARNING";
+                deployStatusColor = "#F59E0B"; // amber
+            }
+        }
+
+        // Update pre-run readiness gate elements
+        const readStatusBadge = document.getElementById('readiness-status-badge');
+        const readBlockingDiv = document.getElementById('readiness-blocking-reasons');
+        const readBlockingUl = document.getElementById('readiness-blocking-list');
+
+        if (readStatusBadge) {
+            readStatusBadge.textContent = deployStatusText;
+            readStatusBadge.style.backgroundColor = deployStatusColor;
+        }
+        if (sumDeployStatus) {
+            sumDeployStatus.textContent = deployStatusText;
+            sumDeployStatus.style.backgroundColor = deployStatusColor;
+        }
+
+        if (deployStatusText === "BLOCKED") {
+            btnStart.disabled = true;
+            btnStart.style.opacity = '0.5';
+            btnStart.style.pointerEvents = 'none';
+            if (readBlockingDiv) readBlockingDiv.classList.remove('hide');
+            if (readBlockingUl) {
+                readBlockingUl.innerHTML = blockingReasonsList.map(r => `<li>${r}</li>`).join('');
+            }
+        } else {
+            btnStart.disabled = false;
+            btnStart.style.opacity = '';
+            btnStart.style.pointerEvents = '';
+            if (readBlockingDiv) readBlockingDiv.classList.add('hide');
+        }
+
+        if (sumRiskText) {
+            if (risks.length === 0) {
+                sumRiskText.innerHTML = '<span style="color: #34D399;">✓ No major performance risks identified</span>';
+            } else {
+                sumRiskText.innerHTML = `<ul style="margin: 0; padding-left: 1rem; color: #FCA5A5;">
+                    ${risks.map(r => `<li>${r}</li>`).join('')}
+                </ul>`;
+            }
+        }
     }
 
     // Capture input updates for all inputs
@@ -2254,131 +2583,304 @@ document.addEventListener('DOMContentLoaded', () => {
             jsonError = e.message;
         }
 
+        const checkDsl = document.getElementById('check-dsl');
         const checkUrl = document.getElementById('check-url');
         const checkAuth = document.getElementById('check-auth');
-        const checkThreshold = document.getElementById('check-threshold');
         const checkCsv = document.getElementById('check-csv');
-        const checkWorkload = document.getElementById('check-workload');
+        const checkThreshold = document.getElementById('check-threshold');
+        const checkMetadata = document.getElementById('check-metadata');
         const readinessStatus = document.getElementById('readiness-status-badge');
-        
-        let allPass = true;
+        const readBlockingDiv = document.getElementById('readiness-blocking-reasons');
+        const readBlockingUl = document.getElementById('readiness-blocking-list');
+        const sumDeployStatus = document.getElementById('summary-deploy-status');
 
+        let blockingReasons = [];
+        let warnings = [];
+
+        // 1. DSL Syntax Check
         if (jsonError) {
-            allPass = false;
-            if (checkUrl) { checkUrl.style.color = '#EF4444'; checkUrl.innerHTML = `<span class="icon">✗</span> JSON syntax error: ${jsonError}`; }
-            if (checkAuth) { checkAuth.style.color = '#EF4444'; checkAuth.innerHTML = `<span class="icon">✗</span> Authentication Configured (JSON error)`; }
-            if (checkThreshold) { checkThreshold.style.color = '#EF4444'; checkThreshold.innerHTML = `<span class="icon">✗</span> Threshold Valid (JSON error)`; }
-            if (checkCsv) { checkCsv.style.color = '#EF4444'; checkCsv.innerHTML = `<span class="icon">✗</span> CSV Data Source Ready (JSON error)`; }
-            if (checkWorkload) { checkWorkload.style.color = '#EF4444'; checkWorkload.innerHTML = `<span class="icon">✗</span> Workload Valid (JSON error)`; }
+            blockingReasons.push("DSL JSON parsing error: " + jsonError);
+            if (checkDsl) {
+                checkDsl.style.color = '#EF4444';
+                checkDsl.innerHTML = `<span class="icon">✗</span> DSL Syntax Invalid: ${jsonError}`;
+            }
+            if (checkUrl) { checkUrl.style.color = '#EF4444'; checkUrl.innerHTML = `<span class="icon">✗</span> URL Check (Requires valid JSON)`; }
+            if (checkAuth) { checkAuth.style.color = '#EF4444'; checkAuth.innerHTML = `<span class="icon">✗</span> Authentication Check (Requires valid JSON)`; }
+            if (checkCsv) { checkCsv.style.color = '#EF4444'; checkCsv.innerHTML = `<span class="icon">✗</span> CSV Check (Requires valid JSON)`; }
+            if (checkThreshold) { checkThreshold.style.color = '#EF4444'; checkThreshold.innerHTML = `<span class="icon">✗</span> Threshold Check (Requires valid JSON)`; }
+            if (checkMetadata) { checkMetadata.style.color = '#EF4444'; checkMetadata.innerHTML = `<span class="icon">✗</span> Metadata Check (Requires valid JSON)`; }
             
             if (readinessStatus) {
-                readinessStatus.textContent = 'FAIL';
-                readinessStatus.className = 'badge';
+                readinessStatus.textContent = 'BLOCKED';
                 readinessStatus.style.backgroundColor = '#EF4444';
+            }
+            if (sumDeployStatus) {
+                sumDeployStatus.textContent = 'BLOCKED';
+                sumDeployStatus.style.backgroundColor = '#EF4444';
             }
             btnStart.disabled = true;
             btnStart.style.opacity = '0.5';
             btnStart.style.pointerEvents = 'none';
+            if (readBlockingDiv) readBlockingDiv.classList.remove('hide');
+            if (readBlockingUl) {
+                readBlockingUl.innerHTML = `<li>DSL syntax invalid: ${jsonError}</li>`;
+            }
             return;
         }
 
-        // 1. URL Check
+        // JSON is valid
+        if (checkDsl) {
+            checkDsl.style.color = '#10B981';
+            checkDsl.innerHTML = `<span class="icon">✓</span> DSL Syntax Valid`;
+        }
+
+        // 2. URL validation
         let urlOk = true;
         const protocol = parsed.protocol || '';
         const config = parsed.config || {};
+        let targetUrl = '';
         if (protocol === 'HTTP' || protocol === 'Browser') {
-            const urlVal = config.url || '';
-            if (!urlVal.startsWith('http://') && !urlVal.startsWith('https://')) {
+            targetUrl = config.url || '';
+            if (!targetUrl) {
                 urlOk = false;
+                blockingReasons.push(`${protocol} Target URL is empty`);
+            } else if (!targetUrl.startsWith('http://') && !targetUrl.startsWith('https://')) {
+                urlOk = false;
+                blockingReasons.push(`${protocol} Target URL missing http:// or https:// scheme`);
+            }
+        } else if (protocol === 'Kafka') {
+            targetUrl = config.brokers || '';
+            if (!targetUrl) {
+                urlOk = false;
+                blockingReasons.push("Kafka brokers list is empty");
+            }
+        } else if (protocol === 'Database') {
+            targetUrl = config.dsn || '';
+            if (!targetUrl) {
+                urlOk = false;
+                blockingReasons.push("Database DSN is empty");
+            }
+        } else {
+            blockingReasons.push("Invalid or missing Protocol in DSL");
+            urlOk = false;
+        }
+
+        if (urlOk) {
+            if (checkUrl) {
+                checkUrl.style.color = '#10B981';
+                checkUrl.innerHTML = `<span class="icon">✓</span> URL Scheme & Format Valid`;
+            }
+        } else {
+            if (checkUrl) {
+                checkUrl.style.color = '#EF4444';
+                checkUrl.innerHTML = `<span class="icon">✗</span> URL Scheme & Format Invalid`;
             }
         }
-        if (urlOk) {
-            if (checkUrl) { checkUrl.style.color = '#10B981'; checkUrl.innerHTML = `<span class="icon">✓</span> URL Scheme & Format Valid`; }
-        } else {
-            allPass = false;
-            if (checkUrl) { checkUrl.style.color = '#EF4444'; checkUrl.innerHTML = `<span class="icon">✗</span> URL missing scheme (http:// or https://)`; }
-        }
 
-        // 2. Auth Check
+        // 3. Authentication validation
         let authOk = true;
+        let authType = 'none';
         if (parsed.auth && parsed.auth.type && parsed.auth.type !== 'none') {
+            authType = parsed.auth.type;
             const auth = parsed.auth;
             if (auth.type === 'basic' && (!auth.username || !auth.password)) authOk = false;
-            if (auth.type === 'bearer' && !auth.token) authOk = false;
-            if (auth.type === 'apikey' && (!auth.header_name || !auth.key_value)) authOk = false;
-            if (auth.type === 'oauth2' && (!auth.token_url || !auth.client_id || !auth.client_secret)) authOk = false;
+            else if (auth.type === 'bearer' && !auth.token) authOk = false;
+            else if (auth.type === 'apikey' && (!auth.header_name || !auth.key_value)) authOk = false;
+            else if (auth.type === 'oauth2' && (!auth.token_url || !auth.client_id || !auth.client_secret)) authOk = false;
         }
         if (authOk) {
-            const label = (parsed.auth && parsed.auth.type && parsed.auth.type !== 'none') ? `Authentication Configured (${parsed.auth.type})` : 'Authentication Configured (None)';
-            if (checkAuth) { checkAuth.style.color = '#10B981'; checkAuth.innerHTML = `<span class="icon">✓</span> ${label}`; }
+            if (checkAuth) {
+                checkAuth.style.color = '#10B981';
+                checkAuth.innerHTML = `<span class="icon">✓</span> Authentication Valid (${authType.toUpperCase()})`;
+            }
         } else {
-            allPass = false;
-            if (checkAuth) { checkAuth.style.color = '#EF4444'; checkAuth.innerHTML = `<span class="icon">✗</span> Authentication Configured (Missing credentials)`; }
+            blockingReasons.push(`Authentication credentials incomplete for type ${authType}`);
+            if (checkAuth) {
+                checkAuth.style.color = '#EF4444';
+                checkAuth.innerHTML = `<span class="icon">✗</span> Authentication Incomplete`;
+            }
         }
 
-        // 3. Threshold Check
+        // 4. CSV validation
+        let csvOk = true;
+        let csvRequired = false;
+        if (parsed.data_source && parsed.data_source.type === 'csv') {
+            csvRequired = true;
+            const fileName = parsed.data_source.file_name || '';
+            if (!uploadedCsvData || uploadedCsvData.fileName !== fileName) {
+                csvOk = false;
+                blockingReasons.push(`Required CSV dataset "${fileName}" not loaded`);
+            }
+        }
+        if (csvOk) {
+            if (checkCsv) {
+                checkCsv.style.color = '#10B981';
+                checkCsv.innerHTML = `<span class="icon">✓</span> CSV Data Source Ready ${csvRequired ? `(${parsed.data_source.file_name})` : '(None Required)'}`;
+            }
+        } else {
+            if (checkCsv) {
+                checkCsv.style.color = '#EF4444';
+                checkCsv.innerHTML = `<span class="icon">✗</span> CSV Dataset Not Loaded`;
+            }
+        }
+
+        // 5. Threshold validation
         let threshOk = true;
+        let hasSlas = false;
         if (parsed.slas) {
+            hasSlas = true;
             const p95 = parsed.slas.p95_latency_ms;
             const p99 = parsed.slas.p99_latency_ms;
             if (p95 !== undefined && p99 !== undefined && parseFloat(p95) >= parseFloat(p99)) {
                 threshOk = false;
+                blockingReasons.push("SLA Target Conflict: P95 must be less than P99 latency");
             }
         }
         if (threshOk) {
-            if (checkThreshold) { checkThreshold.style.color = '#10B981'; checkThreshold.innerHTML = `<span class="icon">✓</span> Threshold Valid (P95 < P99)`; }
+            if (checkThreshold) {
+                checkThreshold.style.color = hasSlas ? '#10B981' : '#F59E0B';
+                checkThreshold.innerHTML = hasSlas ? `<span class="icon">✓</span> Threshold Valid (P95 < P99)` : `<span class="icon">⚠</span> SLA Thresholds Missing`;
+            }
+            if (!hasSlas) {
+                warnings.push("SLA Thresholds Missing");
+            }
         } else {
-            allPass = false;
-            if (checkThreshold) { checkThreshold.style.color = '#EF4444'; checkThreshold.innerHTML = `<span class="icon">✗</span> Threshold Invalid (P95 must be < P99)`; }
-        }
-
-        // 4. CSV Check
-        let csvOk = true;
-        if (parsed.data_source && parsed.data_source.type === 'csv') {
-            const fileName = parsed.data_source.file_name || '';
-            if (!uploadedCsvData || uploadedCsvData.fileName !== fileName) {
-                csvOk = false;
+            if (checkThreshold) {
+                checkThreshold.style.color = '#EF4444';
+                checkThreshold.innerHTML = `<span class="icon">✗</span> Threshold Invalid (P95 >= P99)`;
             }
         }
-        if (csvOk) {
-            const label = (parsed.data_source && parsed.data_source.type === 'csv') ? `CSV Loaded (${parsed.data_source.file_name})` : 'CSV Data Source Ready (None Required)';
-            if (checkCsv) { checkCsv.style.color = '#10B981'; checkCsv.innerHTML = `<span class="icon">✓</span> ${label}`; }
+
+        // 6. Metadata validation
+        let metaOk = true;
+        if (parsed.metadata) {
+            const env = parsed.metadata.environment || '';
+            const appVer = parsed.metadata.app_version || '';
+            if (!env || !appVer) {
+                metaOk = false;
+            }
         } else {
-            allPass = false;
-            if (checkCsv) { checkCsv.style.color = '#EF4444'; checkCsv.innerHTML = `<span class="icon">✗</span> CSV Not Found (${parsed.data_source.file_name})`; }
+            metaOk = false;
+        }
+        if (checkMetadata) {
+            checkMetadata.style.color = metaOk ? '#10B981' : '#F59E0B';
+            checkMetadata.innerHTML = metaOk ? `<span class="icon">✓</span> Metadata Complete` : `<span class="icon">⚠</span> Metadata Incomplete`;
+        }
+        if (!metaOk) {
+            warnings.push("Metadata Incomplete");
         }
 
-        // 5. Workload Check
-        let workloadOk = true;
+        // Workload validation rules (VU > 0, Duration >= Ramp)
         const vus = parsed.vus !== undefined ? parseInt(parsed.vus) : 0;
         const dur = parsed.duration_seconds !== undefined ? parseInt(parsed.duration_seconds) : 0;
         const ramp = parsed.ramp_up_seconds !== undefined ? parseInt(parsed.ramp_up_seconds) : 0;
-        if (vus <= 0 || dur < ramp) {
-            workloadOk = false;
+        if (vus <= 0) {
+            blockingReasons.push("Virtual User (VU) count must be greater than 0");
         }
-        if (workloadOk) {
-            if (checkWorkload) { checkWorkload.style.color = '#10B981'; checkWorkload.innerHTML = `<span class="icon">✓</span> Workload Valid (VU: ${vus}, Dur: ${dur}s, Ramp: ${ramp}s)`; }
+        if (dur <= 0) {
+            blockingReasons.push("Duration must be greater than 0");
+        } else if (dur < ramp) {
+            blockingReasons.push("Duration cannot be less than Ramp Up time");
+        }
+
+        // Compute Health Score for this parsed DSL!
+        let scoreBreakdown = [];
+        // Target Config
+        if (urlOk) scoreBreakdown.push({ val: 20, text: "URL Valid" });
+        else scoreBreakdown.push({ val: -20, text: "URL Invalid" });
+
+        // Auth
+        if (authOk) scoreBreakdown.push({ val: 20, text: "Authentication Valid" });
+        else scoreBreakdown.push({ val: -20, text: "Authentication Incomplete" });
+
+        // Workload
+        if (vus > 0 && dur >= ramp) scoreBreakdown.push({ val: 20, text: "Workload Configured" });
+        else scoreBreakdown.push({ val: -20, text: "Workload Invalid" });
+
+        // Metadata
+        if (metaOk) scoreBreakdown.push({ val: 20, text: "Metadata Complete" });
+        else scoreBreakdown.push({ val: -10, text: "Metadata Incomplete" });
+
+        // SLAs
+        if (hasSlas) {
+            if (threshOk) scoreBreakdown.push({ val: 20, text: "SLA Thresholds Present" });
+            else scoreBreakdown.push({ val: -15, text: "SLA Threshold conflict" });
         } else {
-            allPass = false;
-            if (checkWorkload) { checkWorkload.style.color = '#EF4444'; checkWorkload.innerHTML = `<span class="icon">✗</span> Workload Invalid (VU > 0 & Duration >= Ramp)`; }
+            scoreBreakdown.push({ val: -10, text: "SLA Thresholds Missing" });
+        }
+
+        // Risks/Warnings checks on parsed DSL
+        if (dur > 0) {
+            if (parsed.test_type === 'LOAD' && dur < 300) {
+                warnings.push("Duration < 300s");
+                scoreBreakdown.push({ val: -15, text: "Duration < 300 sec" });
+            } else if (parsed.test_type === 'SOAK' && dur < 3600) {
+                warnings.push("Duration too short (< 3600s)");
+                scoreBreakdown.push({ val: -15, text: "Duration too short (< 3600s)" });
+            }
+        }
+        if (ramp <= 0) {
+            warnings.push("Missing ramp-up period");
+            scoreBreakdown.push({ val: -10, text: "Missing ramp-up period" });
+        } else if (parsed.test_type === 'LOAD' && ramp < (0.10 * dur)) {
+            warnings.push("Aggressive workload ramp-up");
+            scoreBreakdown.push({ val: -15, text: "Aggressive workload ramp-up" });
+        }
+        if (protocol === 'HTTP' && targetUrl.startsWith('http://')) {
+            warnings.push("Insecure target URL");
+            scoreBreakdown.push({ val: -10, text: "Insecure target URL" });
+        }
+        if (protocol === 'Browser' && vus > 10) {
+            warnings.push("Browser VUs too high");
+            scoreBreakdown.push({ val: -15, text: "Browser VUs too high" });
+        } else if (vus > 200) {
+            warnings.push("High user volume load");
+            scoreBreakdown.push({ val: -10, text: "High user volume load" });
+        }
+
+        let score = scoreBreakdown.reduce((sum, item) => sum + item.val, 0);
+        score = Math.max(0, Math.min(100, score));
+
+        // Gate Status Calculation
+        let status = "READY";
+        let statusColor = "#10B981"; // green
+
+        if (blockingReasons.length > 0) {
+            status = "BLOCKED";
+            statusColor = "#EF4444"; // red
+        } else if (warnings.length > 0 || score < 80) {
+            if (score < 60) {
+                status = "BLOCKED";
+                statusColor = "#EF4444";
+                blockingReasons.push(`Health score (${score}) is below deployment threshold (60)`);
+            } else {
+                status = "READY WITH WARNING";
+                statusColor = "#F59E0B"; // amber
+            }
         }
 
         if (readinessStatus) {
-            if (allPass) {
-                readinessStatus.textContent = 'PASS';
-                readinessStatus.style.backgroundColor = '#10B981';
-            } else {
-                readinessStatus.textContent = 'FAIL';
-                readinessStatus.style.backgroundColor = '#EF4444';
-            }
+            readinessStatus.textContent = status;
+            readinessStatus.style.backgroundColor = statusColor;
         }
-        btnStart.disabled = !allPass;
-        if (!allPass) {
+        if (sumDeployStatus) {
+            sumDeployStatus.textContent = status;
+            sumDeployStatus.style.backgroundColor = statusColor;
+        }
+
+        if (status === "BLOCKED") {
+            btnStart.disabled = true;
             btnStart.style.opacity = '0.5';
             btnStart.style.pointerEvents = 'none';
+            if (readBlockingDiv) readBlockingDiv.classList.remove('hide');
+            if (readBlockingUl) {
+                readBlockingUl.innerHTML = blockingReasons.map(r => `<li>${r}</li>`).join('');
+            }
         } else {
+            btnStart.disabled = false;
             btnStart.style.opacity = '';
             btnStart.style.pointerEvents = '';
+            if (readBlockingDiv) readBlockingDiv.classList.add('hide');
         }
     }
 
@@ -2469,4 +2971,8 @@ document.addEventListener('DOMContentLoaded', () => {
     // Initial fetch and check
     fetchScenarios();
     runReadinessCheck();
+
+    } catch (wizardInitError) {
+        console.error('[Vuelitycs] Scenario Wizard initialization failed:', wizardInitError);
+    }
 });

@@ -757,6 +757,16 @@
                                         <div style="margin-bottom: 0.4rem;"><strong>Estimated Runtime:</strong> <span id="wiz-template-runtime" style="color: var(--text-main);">-</span></div>
                                         <div><strong>Recommended Env:</strong> <span id="wiz-template-env" style="color: var(--text-main);">-</span></div>
                                     </div>
+
+                                    <!-- Epic 7: Suggested Templates Panel -->
+                                    <div id="wiz-suggested-templates" style="margin-top: 0.75rem; background: rgba(139, 92, 246, 0.05); border: 1px solid rgba(139, 92, 246, 0.2); border-radius: 6px; padding: 0.75rem; font-size: 0.8rem;">
+                                        <div style="color: #C084FC; font-weight: 600; margin-bottom: 0.4rem; display: flex; align-items: center; gap: 0.25rem;">
+                                            <svg style="width: 14px; height: 14px; fill: none; stroke: currentColor;" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9.663 17h4.673M12 3v1m6.364 1.636l-.707.707M21 12h-1M4 12H3m3.343-5.657l-.707-.707m2.828 9.9a5 5 0 117.072 0l-.548.547A3.374 3.374 0 0014 18.469V19a2 2 0 11-4 0v-.531c0-.895-.356-1.754-.988-2.386l-.548-.547z" /></svg>
+                                            Suggested Templates
+                                        </div>
+                                        <ul id="wiz-suggested-templates-list" style="margin: 0; padding-left: 1.2rem; color: var(--text-muted); font-size: 0.75rem; line-height: 1.4;">
+                                        </ul>
+                                    </div>
                                 </div>
 
                                 <!-- Step 1 -->
@@ -1094,7 +1104,7 @@
                                 <!-- Step 8: Scenario Health & Complexity Assessment -->
                                 <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-bottom: 1rem;">
                                     <!-- Health Assessment Card -->
-                                    <div id="card-scenario-health" class="wizard-step" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08); transition: background-color 0.3s, border-color 0.3s; margin-bottom: 0; padding: 1rem;">
+                                    <div id="card-scenario-health" class="wizard-step" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08); transition: background-color 0.3s, border-color 0.3s; margin-bottom: 0; padding: 1rem; display: flex; flex-direction: column;">
                                         <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 8: Health Assessment</h3>
                                         <div style="display: flex; gap: 1rem; align-items: center; margin-bottom: 0.5rem;">
                                             <!-- Health Score Radial gauge -->
@@ -1117,45 +1127,92 @@
                                              <div style="font-size: 0.75rem; color: #34D399; margin-bottom: 0.25rem; font-weight: bold;">Recommendations:</div>
                                              <ul id="wiz-health-recommendations-list" style="margin: 0; padding-left: 1rem; font-size: 0.75rem; color: #A7F3D0; line-height: 1.3;"></ul>
                                         </div>
+                                        <!-- Epic 1: Health Score Breakdown Panel -->
+                                        <div id="wiz-health-breakdown-container" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.5rem; margin-top: 0.5rem;">
+                                             <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; font-weight: bold; display: flex; justify-content: space-between;">
+                                                 <span>Health Score Breakdown</span>
+                                             </div>
+                                             <ul id="wiz-health-breakdown-list" style="margin: 0; padding-left: 0; font-size: 0.72rem; line-height: 1.4; list-style: none;">
+                                                 <!-- Breakdown items dynamically inserted -->
+                                             </ul>
+                                        </div>
                                     </div>
-
+ 
                                     <!-- Complexity Score Card (Epic 2) -->
-                                    <div id="card-scenario-complexity" class="wizard-step" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08); transition: background-color 0.3s, border-color 0.3s; margin-bottom: 0; padding: 1rem; display: flex; flex-direction: column; justify-content: space-between;">
+                                    <div id="card-scenario-complexity" class="wizard-step" style="background: rgba(255,255,255,0.02); border-color: rgba(255,255,255,0.08); transition: background-color 0.3s, border-color 0.3s; margin-bottom: 0; padding: 1rem; display: flex; flex-direction: column;">
                                         <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Scenario Complexity</h3>
-                                        <div style="display: flex; gap: 1rem; align-items: center; justify-content: center; height: 100%; flex: 1;">
+                                        <div style="display: flex; gap: 1rem; align-items: center; justify-content: center; margin-bottom: 0.5rem;">
                                              <div style="text-align: center;">
                                                  <span id="wiz-complexity-level" style="font-size: 1.5rem; font-weight: bold; color: #10B981; display: block; text-transform: uppercase; letter-spacing: 1px; margin-bottom: 0.25rem;">LOW</span>
                                                  <span style="font-size: 0.8rem; color: var(--text-muted);">Complexity Index: <span id="wiz-complexity-score" style="color: var(--text-main); font-weight: bold;">12</span></span>
                                              </div>
                                         </div>
+                                        <!-- Epic 2: Complexity Score Breakdown Panel -->
+                                        <div id="wiz-complexity-breakdown-container" style="border-top: 1px solid rgba(255,255,255,0.05); padding-top: 0.5rem; margin-top: 0.5rem;">
+                                             <div style="font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.25rem; font-weight: bold;">Complexity Factor Breakdown</div>
+                                             <ul id="wiz-complexity-breakdown-list" style="margin: 0; padding-left: 0; font-size: 0.72rem; line-height: 1.4; list-style: none;">
+                                                 <!-- Breakdown items dynamically inserted -->
+                                             </ul>
+                                        </div>
                                     </div>
+                                </div>
+ 
+                                <!-- Epic 6: Scenario Risk Analyzer Card -->
+                                <div id="card-scenario-risks" class="wizard-step hide" style="background: rgba(239, 68, 68, 0.03); border-color: rgba(239, 68, 68, 0.15); padding: 1rem; margin-bottom: 1.25rem;">
+                                    <h3 style="font-size: 1rem; color: #F87171; margin-bottom: 0.5rem; display: flex; align-items: center; gap: 0.4rem;">
+                                        <svg style="width: 16px; height: 16px; fill: none; stroke: currentColor;" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" /></svg>
+                                        Performance Risk Analyzer
+                                    </h3>
+                                    <ul id="wiz-risks-list" style="margin: 0; padding-left: 1.2rem; font-size: 0.75rem; color: #FCA5A5; line-height: 1.4;">
+                                        <!-- Dynamic risks -->
+                                    </ul>
                                 </div>
 
-                                <!-- Epic 7: Wizard Summary Report Card -->
-                                <div class="wizard-step" style="background: rgba(139, 92, 246, 0.05); border-color: rgba(139, 92, 246, 0.2); padding: 1rem; margin-bottom: 1.5rem;">
-                                    <h3 style="font-size: 1rem; color: #C084FC; margin-bottom: 0.75rem;">Scenario Summary Report</h3>
-                                    <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.8rem; color: var(--text-muted);">
-                                        <div>
-                                            <div style="margin-bottom: 0.4rem;"><strong>Protocol:</strong> <span id="summary-proto" style="color: var(--text-main);">-</span></div>
-                                            <div style="margin-bottom: 0.4rem;"><strong>Method:</strong> <span id="summary-method" style="color: var(--text-main);">-</span></div>
-                                            <div style="margin-bottom: 0.4rem;"><strong>Target:</strong> <span id="summary-target" style="color: var(--text-main); font-family: monospace; word-break: break-all;">-</span></div>
-                                            <div style="margin-bottom: 0.4rem;"><strong>Authentication:</strong> <span id="summary-auth" style="color: var(--text-main);">-</span></div>
-                                        </div>
-                                        <div>
-                                            <div style="margin-bottom: 0.4rem;"><strong>Data Source:</strong> <span id="summary-datasource" style="color: var(--text-main);">-</span></div>
-                                            <div style="margin-bottom: 0.4rem;"><strong>Test Type:</strong> <span id="summary-testtype" style="color: var(--text-main);">-</span></div>
-                                            <div style="margin-bottom: 0.4rem;"><strong>Target VU:</strong> <span id="summary-vus" style="color: var(--text-main);">-</span></div>
-                                            <div style="margin-bottom: 0.4rem;"><strong>Duration:</strong> <span id="summary-duration" style="color: var(--text-main);">-</span></div>
-                                        </div>
-                                    </div>
-                                    <div style="margin-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem;">
-                                        <h4 style="font-size: 0.85rem; margin: 0 0 0.4rem 0; color: #C084FC; font-weight: 600;">Capacity Forecast</h4>
-                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
-                                            <div>Expected Peak RPS: <span id="summary-forecast-rps" style="color: var(--text-main); font-weight: bold;">-</span></div>
-                                            <div>Estimated Engine: <span id="summary-forecast-engine" style="color: var(--text-main); font-weight: bold;">-</span></div>
-                                        </div>
-                                    </div>
-                                </div>
+                                 <!-- Epic 8: Enhanced Scenario Summary Report (Pre-deployment report) -->
+                                 <div class="wizard-step" style="background: rgba(139, 92, 246, 0.05); border-color: rgba(139, 92, 246, 0.25); padding: 1rem; margin-bottom: 1.5rem;">
+                                     <h3 style="font-size: 1rem; color: #C084FC; margin-bottom: 0.75rem; display: flex; align-items: center; gap: 0.4rem;">
+                                         <svg style="width: 16px; height: 16px; fill: none; stroke: currentColor;" viewBox="0 0 24 24" stroke-width="2"><path stroke-linecap="round" stroke-linejoin="round" d="M9 17v-2m3 2v-4m3 4v-6m2 10H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+                                         Pre-Deployment Scenario Report
+                                     </h3>
+                                     <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; font-size: 0.8rem; color: var(--text-muted);">
+                                         <div>
+                                             <div style="margin-bottom: 0.4rem;"><strong>Protocol:</strong> <span id="summary-proto" style="color: var(--text-main);">-</span></div>
+                                             <div style="margin-bottom: 0.4rem;"><strong>Method:</strong> <span id="summary-method" style="color: var(--text-main);">-</span></div>
+                                             <div style="margin-bottom: 0.4rem;"><strong>Target URL:</strong> <span id="summary-target" style="color: var(--text-main); font-family: monospace; word-break: break-all;">-</span></div>
+                                             <div style="margin-bottom: 0.4rem;"><strong>Authentication:</strong> <span id="summary-auth" style="color: var(--text-main);">-</span></div>
+                                             <div style="margin-bottom: 0.4rem;"><strong>CSV Source:</strong> <span id="summary-datasource" style="color: var(--text-main);">-</span></div>
+                                         </div>
+                                         <div>
+                                             <div style="margin-bottom: 0.4rem;"><strong>Test Type:</strong> <span id="summary-testtype" style="color: var(--text-main);">-</span></div>
+                                             <div style="margin-bottom: 0.4rem;"><strong>Target VU:</strong> <span id="summary-vus" style="color: var(--text-main);">-</span></div>
+                                             <div style="margin-bottom: 0.4rem;"><strong>Duration:</strong> <span id="summary-duration" style="color: var(--text-main);">-</span></div>
+                                             <div style="margin-bottom: 0.4rem;"><strong>Health Score:</strong> <span id="summary-health" style="color: var(--text-main); font-weight: bold;">-</span></div>
+                                             <div style="margin-bottom: 0.4rem;"><strong>Complexity:</strong> <span id="summary-complexity" style="color: var(--text-main); font-weight: bold;">-</span></div>
+                                         </div>
+                                     </div>
+                                     
+                                     <!-- Epic 5: Forecast Explanation Details -->
+                                     <div style="margin-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem;">
+                                         <h4 style="font-size: 0.85rem; margin: 0 0 0.4rem 0; color: #C084FC; font-weight: 600;">Capacity Forecast Breakdown</h4>
+                                         <div id="summary-forecast-detail" style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.4; background: rgba(0,0,0,0.2); border-radius: 4px; padding: 0.5rem; font-family: monospace;">
+                                             <!-- Forecast formula details dynamically inserted -->
+                                         </div>
+                                     </div>
+
+                                     <!-- Deploy Status & Risk Summary inside report -->
+                                     <div style="margin-top: 0.75rem; border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.75rem; display: grid; grid-template-columns: 120px 1fr; gap: 0.75rem; align-items: start;">
+                                         <div>
+                                             <h4 style="font-size: 0.85rem; margin: 0 0 0.4rem 0; color: #C084FC; font-weight: 600;">Deploy Status</h4>
+                                             <span id="summary-deploy-status" class="badge" style="background-color: #EF4444; color: white; padding: 0.15rem 0.5rem; font-size: 0.75rem; font-weight: bold; text-transform: uppercase;">BLOCKED</span>
+                                         </div>
+                                         <div>
+                                             <h4 style="font-size: 0.85rem; margin: 0 0 0.4rem 0; color: #C084FC; font-weight: 600;">Risk Summary</h4>
+                                             <div id="summary-risk-text" style="font-size: 0.75rem; color: var(--text-muted); line-height: 1.3;">
+                                                 No performance risks identified.
+                                             </div>
+                                         </div>
+                                     </div>
+                                 </div>
 
                                 <div style="margin-top: 1.5rem;">
                                     <button class="btn btn-primary" id="btn-wizard-generate" style="padding: 0.8rem 2rem; width: 100%;">Generate & Load Scenario</button>
@@ -1209,30 +1266,40 @@
                                 <div id="dsl-diff-content" style="font-size: 0.75rem;"></div>
                             </div>
 
-                            <!-- Epic 6: Pre-Run Readiness Check Panel -->
-                            <div id="readiness-check-panel" style="margin-bottom: 0.75rem; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 0.75rem;">
-                                <h4 style="font-size: 0.85rem; margin: 0 0 0.5rem 0; color: var(--text-main); font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
-                                    Pre-Run Readiness Check
-                                    <span id="readiness-status-badge" class="badge" style="background-color: #10B981; color: white; padding: 0.1rem 0.4rem; font-size: 0.7rem; font-weight: bold;">PASS</span>
-                                </h4>
-                                <ul style="margin: 0; padding: 0; list-style: none; font-size: 0.8rem; line-height: 1.6;" id="readiness-checklist">
-                                    <li id="check-url" style="display: flex; align-items: center; gap: 0.4rem; color: #10B981;">
-                                        <span class="icon">✓</span> URL Scheme & Format Valid
-                                    </li>
-                                    <li id="check-auth" style="display: flex; align-items: center; gap: 0.4rem; color: #10B981;">
-                                        <span class="icon">✓</span> Authentication Configured
-                                    </li>
-                                    <li id="check-threshold" style="display: flex; align-items: center; gap: 0.4rem; color: #10B981;">
-                                        <span class="icon">✓</span> Threshold Valid (P95 < P99)
-                                    </li>
-                                    <li id="check-csv" style="display: flex; align-items: center; gap: 0.4rem; color: #10B981;">
-                                        <span class="icon">✓</span> CSV Data Source Ready
-                                    </li>
-                                    <li id="check-workload" style="display: flex; align-items: center; gap: 0.4rem; color: #10B981;">
-                                        <span class="icon">✓</span> Workload Valid (VU > 0 & Dur >= Ramp)
-                                    </li>
-                                </ul>
-                            </div>
+                             <!-- Epic 3 & 4: Deploy Readiness Gate & Validation Engine -->
+                             <div id="readiness-check-panel" style="margin-bottom: 0.75rem; background: rgba(0,0,0,0.25); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 0.75rem;">
+                                 <h4 style="font-size: 0.85rem; margin: 0 0 0.5rem 0; color: var(--text-main); font-weight: 600; display: flex; justify-content: space-between; align-items: center;">
+                                     Deploy Readiness Gate
+                                     <span id="readiness-status-badge" class="badge" style="background-color: #EF4444; color: white; padding: 0.15rem 0.5rem; font-size: 0.75rem; font-weight: bold; text-transform: uppercase; letter-spacing: 0.5px;">BLOCKED</span>
+                                 </h4>
+                                 
+                                 <!-- Blocking Reasons Panel -->
+                                 <div id="readiness-blocking-reasons" style="margin-bottom: 0.5rem; padding: 0.4rem 0.6rem; background: rgba(239, 68, 68, 0.1); border: 1px solid rgba(239, 68, 68, 0.2); border-radius: 4px; font-size: 0.75rem; color: #F87171;" class="hide">
+                                     <strong>Blocking Issues:</strong>
+                                     <ul id="readiness-blocking-list" style="margin: 0.2rem 0 0 0; padding-left: 1rem; line-height: 1.3;"></ul>
+                                 </div>
+
+                                 <ul style="margin: 0; padding: 0; list-style: none; font-size: 0.8rem; line-height: 1.6;" id="readiness-checklist">
+                                     <li id="check-dsl" style="display: flex; align-items: center; gap: 0.4rem; color: #EF4444;">
+                                         <span class="icon">✗</span> DSL Syntax Valid
+                                     </li>
+                                     <li id="check-url" style="display: flex; align-items: center; gap: 0.4rem; color: #EF4444;">
+                                         <span class="icon">✗</span> URL Scheme & Format Valid
+                                     </li>
+                                     <li id="check-auth" style="display: flex; align-items: center; gap: 0.4rem; color: #EF4444;">
+                                         <span class="icon">✗</span> Authentication Valid
+                                     </li>
+                                     <li id="check-csv" style="display: flex; align-items: center; gap: 0.4rem; color: #EF4444;">
+                                         <span class="icon">✗</span> CSV Data Source Ready
+                                     </li>
+                                     <li id="check-threshold" style="display: flex; align-items: center; gap: 0.4rem; color: #EF4444;">
+                                         <span class="icon">✗</span> Threshold Valid (P95 < P99)
+                                     </li>
+                                     <li id="check-metadata" style="display: flex; align-items: center; gap: 0.4rem; color: #EF4444;">
+                                         <span class="icon">✗</span> Metadata Complete
+                                     </li>
+                                 </ul>
+                             </div>
 
                             <div class="editor-actions">
                                 <button class="btn btn-primary btn-full" id="btn-start-test">
