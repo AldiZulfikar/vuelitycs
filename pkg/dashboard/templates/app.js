@@ -2168,19 +2168,9 @@ document.addEventListener('DOMContentLoaded', () => {
         // Render Capacity Forecast explanation inside Pre-Deployment Report
         const forecastDetailEl = document.getElementById('summary-forecast-detail');
         if (forecastDetailEl) {
-            forecastDetailEl.innerHTML = `Target VU : ${vus}
-Think Time : ${pacing} ms
-
-Predicted Peak RPS:
-${vus} / ${pacingSec} sec
-= ${estPeakRPS} RPS
-
-Engine Recommendation:
-${vus} VU × ${activeWizProtocol === 'Browser' ? '400 MB' : '25 MB'}
-≈ ${activeWizProtocol === 'Browser' ? (vus * 400 / 1024).toFixed(1) + ' GB' : (vus * 25 / 1024).toFixed(1) + ' GB'} RAM
-
-Recommended:
-${recCpuRam}`;
+            const multiplier = activeWizProtocol === 'Browser' ? '400 MB' : '25 MB';
+            const ramVal = activeWizProtocol === 'Browser' ? (vus * 400 / 1024).toFixed(1) + ' GB' : (vus * 25 / 1024).toFixed(1) + ' GB';
+            forecastDetailEl.innerHTML = `Target VU : ${vus} \nThink Time : ${pacing} ms \nPredicted Peak RPS: ${vus} / ${pacingSec} sec = ${estPeakRPS} RPS \nEngine Recommendation: ${vus} VU × ${multiplier} ≈ ${ramVal} \nRAM Recommended: ${recCpuRam}`;
         }
 
         // Epic 7: Suggested Templates List
