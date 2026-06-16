@@ -2589,7 +2589,6 @@ document.addEventListener('DOMContentLoaded', () => {
         const checkAuth = document.getElementById('check-auth');
         const checkCsv = document.getElementById('check-csv');
         const checkThreshold = document.getElementById('check-threshold');
-        const checkMetadata = document.getElementById('check-metadata');
         const readinessStatus = document.getElementById('readiness-status-badge');
         const readBlockingDiv = document.getElementById('readiness-blocking-reasons');
         const readBlockingUl = document.getElementById('readiness-blocking-list');
@@ -2609,7 +2608,6 @@ document.addEventListener('DOMContentLoaded', () => {
             if (checkAuth) { checkAuth.style.color = '#EF4444'; checkAuth.innerHTML = `<span class="icon">✗</span> Authentication Check (Requires valid JSON)`; }
             if (checkCsv) { checkCsv.style.color = '#EF4444'; checkCsv.innerHTML = `<span class="icon">✗</span> CSV Check (Requires valid JSON)`; }
             if (checkThreshold) { checkThreshold.style.color = '#EF4444'; checkThreshold.innerHTML = `<span class="icon">✗</span> Threshold Check (Requires valid JSON)`; }
-            if (checkMetadata) { checkMetadata.style.color = '#EF4444'; checkMetadata.innerHTML = `<span class="icon">✗</span> Metadata Check (Requires valid JSON)`; }
             
             if (readinessStatus) {
                 readinessStatus.textContent = 'BLOCKED';
@@ -2752,24 +2750,6 @@ document.addEventListener('DOMContentLoaded', () => {
             }
         }
 
-        // 6. Metadata validation
-        let metaOk = true;
-        if (parsed.metadata) {
-            const env = parsed.metadata.environment || '';
-            const appVer = parsed.metadata.app_version || '';
-            if (!env || !appVer) {
-                metaOk = false;
-            }
-        } else {
-            metaOk = false;
-        }
-        if (checkMetadata) {
-            checkMetadata.style.color = metaOk ? '#10B981' : '#F59E0B';
-            checkMetadata.innerHTML = metaOk ? `<span class="icon">✓</span> Metadata Complete` : `<span class="icon">⚠</span> Metadata Incomplete`;
-        }
-        if (!metaOk) {
-            warnings.push("Metadata Incomplete");
-        }
 
         // Workload validation rules (VU > 0, Duration >= Ramp)
         const vus = parsed.vus !== undefined ? parseInt(parsed.vus) : 0;
