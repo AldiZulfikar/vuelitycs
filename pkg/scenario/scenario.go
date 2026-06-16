@@ -5,6 +5,7 @@ import (
 	"encoding/json"
 	"fmt"
 	"io"
+	"math"
 	"os"
 	"sync"
 	"time"
@@ -53,6 +54,7 @@ type Scenario struct {
 	RampUpSeconds   int                    `json:"ramp_up_seconds"`
 	PacingMs        int                    `json:"pacing_ms,omitempty"` // delay between loops
 	TestType        string                 `json:"test_type,omitempty"` // LOAD, STRESS, SPIKE, SOAK, VOLUME, SCALABILITY
+	WorkloadShape   string                 `json:"workload_shape,omitempty"`
 	Scheduler       string                 `json:"scheduler,omitempty"` // LoadScheduler, StressScheduler, SpikeScheduler, SoakScheduler, VolumeScheduler, ScalabilityScheduler
 	SLAs            *SLAConfig             `json:"slas,omitempty"`
 	Metadata        map[string]string      `json:"metadata,omitempty"`
@@ -138,6 +140,96 @@ func NewRunner(s *Scenario, eb *event.EventBus) *Runner {
 func (r *Runner) getTargetVUsAndStage(elapsedSec float64, totalDuration float64, maxVUs int, rampUp float64) (int, string) {
 	if elapsedSec >= totalDuration {
 		return 0, "COMPLETE"
+	}
+
+	if r.scenario.WorkloadShape != "" && r.scenario.WorkloadShape != "custom" {
+		switch r.scenario.WorkloadShape {
+		case "linear":
+			if rampUp > 0 && elapsedSec < rampUp {
+				fraction := elapsedSec / rampUp
+				target := int(fraction * float64(maxVUs))
+				if target < 1 {
+					target = 1
+				}
+				return target, "RAMP_UP"
+			}
+			return maxVUs, "STEADY"
+
+		case "step":
+			stepDuration := totalDuration / 4
+			stepIndex := int(elapsedSec / stepDuration)
+			if stepIndex >= 4 {
+				stepIndex = 3
+			}
+			ratios := []float64{0.0, 0.33, 0.66, 1.0}
+			target := int(float64(maxVUs) * ratios[stepIndex])
+			if target < 1 {
+				target = 1
+			}
+			return target, "STEP_UP"
+
+		case "spike":
+			ratio := elapsedSec / totalDuration
+			if ratio < 0.25 {
+				target := int(float64(maxVUs) * 0.10)
+				if target < 1 {
+					target = 1
+				}
+				return target, "STEADY"
+			} else if ratio < 0.50 {
+				frac := (ratio - 0.25) / 0.25
+				target := int(float64(maxVUs) * (0.10 + frac*0.90))
+				return target, "SPIKE"
+			} else if ratio < 0.75 {
+				frac := (ratio - 0.50) / 0.25
+				target := int(float64(maxVUs) * (1.0 - frac*0.90))
+				return target, "SPIKE_DOWN"
+			} else {
+				target := int(float64(maxVUs) * 0.10)
+				if target < 1 {
+					target = 1
+				}
+				return target, "STEADY"
+			}
+
+		case "staircase":
+			ratio := elapsedSec / totalDuration
+			if ratio < 0.15 {
+				frac := ratio / 0.15
+				target := int(float64(maxVUs) * 0.33 * frac)
+				if target < 1 {
+					target = 1
+				}
+				return target, "RAMP_UP"
+			} else if ratio < 0.35 {
+				target := int(float64(maxVUs) * 0.33)
+				return target, "STEADY"
+			} else if ratio < 0.50 {
+				frac := (ratio - 0.35) / 0.15
+				target := int(float64(maxVUs) * (0.33 + 0.33*frac))
+				return target, "RAMP_UP"
+			} else if ratio < 0.70 {
+				target := int(float64(maxVUs) * 0.66)
+				return target, "STEADY"
+			} else if ratio < 0.85 {
+				frac := (ratio - 0.70) / 0.15
+				target := int(float64(maxVUs) * (0.66 + 0.34*frac))
+				return target, "RAMP_UP"
+			} else {
+				target := maxVUs
+				return target, "STEADY"
+			}
+
+		case "wave":
+			freq := 2.0
+			x := elapsedSec / totalDuration
+			sineVal := math.Sin(2.0*math.Pi*x*freq - math.Pi/2.0)
+			target := int(float64(maxVUs) * (0.75 + 0.25*sineVal))
+			if target < 1 {
+				target = 1
+			}
+			return target, "WAVE"
+		}
 	}
 
 	switch r.scenario.TestType {

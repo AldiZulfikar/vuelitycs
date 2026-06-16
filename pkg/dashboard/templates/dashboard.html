@@ -815,34 +815,45 @@
                                     </div>
                                 </div>
 
-                                <!-- Step 3B -->
-                                <div class="wizard-step">
-                                    <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 3B: Generated Workload Parameters</h3>
-                                    <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem;">
-                                        <div>
-                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Target VUs</label>
-                                            <input type="number" id="wiz-vus" class="wizard-input-field" value="50">
-                                        </div>
-                                        <div>
-                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Duration</label>
-                                            <div style="display: flex; gap: 0.25rem;">
-                                                <input type="number" id="wiz-duration" class="wizard-input-field" value="60" style="flex: 2; min-width: 0;">
-                                                <select id="wiz-duration-unit" class="wizard-input-field" style="flex: 1; background: rgba(0,0,0,0.2); padding: 0.4rem 0.2rem; min-width: 55px; font-size: 0.8rem;">
-                                                    <option value="sec">sec</option>
-                                                    <option value="min">min</option>
-                                                </select>
-                                            </div>
-                                        </div>
-                                        <div>
-                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Ramp Up (sec)</label>
-                                            <input type="number" id="wiz-ramp-up" class="wizard-input-field" value="10">
-                                        </div>
-                                        <div>
-                                            <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Pacing (ms)</label>
-                                            <input type="number" id="wiz-pacing" class="wizard-input-field" value="500">
-                                        </div>
-                                    </div>
-                                </div>
+                                 <!-- Step 3B -->
+                                 <div class="wizard-step">
+                                     <h3 style="font-size: 1rem; color: var(--text-main); margin-bottom: 0.75rem;">Step 3B: Generated Workload Parameters</h3>
+                                     <div style="display: grid; grid-template-columns: repeat(5, 1fr); gap: 1rem;">
+                                         <div>
+                                             <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Target VUs</label>
+                                             <input type="number" id="wiz-vus" class="wizard-input-field" value="50">
+                                         </div>
+                                         <div>
+                                             <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Duration</label>
+                                             <div style="display: flex; gap: 0.25rem;">
+                                                 <input type="number" id="wiz-duration" class="wizard-input-field" value="60" style="flex: 2; min-width: 0;">
+                                                 <select id="wiz-duration-unit" class="wizard-input-field" style="flex: 1; background: rgba(0,0,0,0.2); padding: 0.4rem 0.2rem; min-width: 55px; font-size: 0.8rem;">
+                                                     <option value="sec">sec</option>
+                                                     <option value="min">min</option>
+                                                 </select>
+                                             </div>
+                                         </div>
+                                         <div>
+                                             <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Ramp Up (sec)</label>
+                                             <input type="number" id="wiz-ramp-up" class="wizard-input-field" value="10">
+                                         </div>
+                                         <div>
+                                             <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Pacing (ms)</label>
+                                             <input type="number" id="wiz-pacing" class="wizard-input-field" value="500">
+                                         </div>
+                                         <div>
+                                             <label style="display: block; font-size: 0.75rem; color: var(--text-muted); margin-bottom: 0.5rem;">Workload Shape</label>
+                                             <select id="wiz-workload-shape" class="wizard-input-field" style="background: rgba(0,0,0,0.2); width: 100%;">
+                                                 <option value="linear">Linear</option>
+                                                 <option value="step">Step</option>
+                                                 <option value="spike">Spike</option>
+                                                 <option value="staircase">Staircase</option>
+                                                 <option value="wave">Wave</option>
+                                                 <option value="custom">Custom</option>
+                                             </select>
+                                         </div>
+                                     </div>
+                                 </div>
 
                                 <!-- Protocol Config -->
                                 <div class="wizard-step" id="wiz-proto-config">

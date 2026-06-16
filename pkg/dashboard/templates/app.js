@@ -1372,67 +1372,112 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         let points = [];
+        const workloadShape = document.getElementById('wiz-workload-shape')?.value || 'linear';
         
-        switch (activeWizTestType) {
-            case 'LOAD':
-                const rampRatio = Math.min(ramp / dur, 0.8);
-                points.push({rX: 0, rY: 0});
-                points.push({rX: rampRatio, rY: 1});
-                points.push({rX: 0.95, rY: 1});
-                points.push({rX: 1.0, rY: 0});
-                break;
+        if (workloadShape !== 'custom') {
+            switch (workloadShape) {
+                case 'linear':
+                    const rampRatio = Math.min(ramp / dur, 0.8);
+                    points.push({rX: 0, rY: 0});
+                    points.push({rX: rampRatio, rY: 1});
+                    points.push({rX: 0.95, rY: 1});
+                    points.push({rX: 1.0, rY: 0});
+                    break;
+                case 'step':
+                    points.push({rX: 0, rY: 0});
+                    points.push({rX: 0.25, rY: 0});
+                    points.push({rX: 0.25, rY: 0.33});
+                    points.push({rX: 0.5, rY: 0.33});
+                    points.push({rX: 0.5, rY: 0.66});
+                    points.push({rX: 0.75, rY: 0.66});
+                    points.push({rX: 0.75, rY: 1.0});
+                    points.push({rX: 1.0, rY: 1.0});
+                    break;
+                case 'spike':
+                    points.push({rX: 0, rY: 0});
+                    points.push({rX: 0.25, rY: 0.1});
+                    points.push({rX: 0.5, rY: 1.0});
+                    points.push({rX: 0.75, rY: 0.1});
+                    points.push({rX: 1.0, rY: 0.1});
+                    break;
+                case 'staircase':
+                    points.push({rX: 0, rY: 0});
+                    points.push({rX: 0.15, rY: 0.33});
+                    points.push({rX: 0.35, rY: 0.33});
+                    points.push({rX: 0.5, rY: 0.66});
+                    points.push({rX: 0.7, rY: 0.66});
+                    points.push({rX: 0.85, rY: 1.0});
+                    points.push({rX: 1.0, rY: 1.0});
+                    break;
+                case 'wave':
+                    for (let x = 0; x <= 1.0; x += 0.02) {
+                        const sineVal = Math.sin(2.0 * Math.PI * x * 2.0 - Math.PI / 2.0);
+                        points.push({rX: x, rY: 0.75 + 0.25 * sineVal});
+                    }
+                    break;
+            }
+        } else {
+            switch (activeWizTestType) {
+                case 'LOAD':
+                    const rampRatio = Math.min(ramp / dur, 0.8);
+                    points.push({rX: 0, rY: 0});
+                    points.push({rX: rampRatio, rY: 1});
+                    points.push({rX: 0.95, rY: 1});
+                    points.push({rX: 1.0, rY: 0});
+                    break;
 
-            case 'STRESS':
-                points.push({rX: 0, rY: 0});
-                points.push({rX: 0.1, rY: 0.33});
-                points.push({rX: 0.3, rY: 0.33});
-                points.push({rX: 0.4, rY: 0.66});
-                points.push({rX: 0.6, rY: 0.66});
-                points.push({rX: 0.7, rY: 1.0});
-                points.push({rX: 0.95, rY: 1.0});
-                points.push({rX: 1.0, rY: 0});
-                break;
+                case 'STRESS':
+                    points.push({rX: 0, rY: 0});
+                    points.push({rX: 0.1, rY: 0.33});
+                    points.push({rX: 0.3, rY: 0.33});
+                    points.push({rX: 0.4, rY: 0.66});
+                    points.push({rX: 0.6, rY: 0.66});
+                    points.push({rX: 0.7, rY: 1.0});
+                    points.push({rX: 0.95, rY: 1.0});
+                    points.push({rX: 1.0, rY: 0});
+                    break;
 
-            case 'SPIKE':
-                points.push({rX: 0, rY: 0});
-                points.push({rX: 0.1, rY: 1.0});
-                points.push({rX: 0.25, rY: 1.0});
-                points.push({rX: 0.35, rY: 0});
-                points.push({rX: 1.0, rY: 0});
-                break;
+                case 'SPIKE':
+                    points.push({rX: 0, rY: 0});
+                    points.push({rX: 0.1, rY: 1.0});
+                    points.push({rX: 0.25, rY: 1.0});
+                    points.push({rX: 0.35, rY: 0});
+                    points.push({rX: 1.0, rY: 0});
+                    break;
 
-            case 'SOAK':
-                points.push({rX: 0, rY: 0});
-                points.push({rX: 0.15, rY: 1.0});
-                points.push({rX: 0.9, rY: 1.0});
-                points.push({rX: 1.0, rY: 0});
-                break;
+                case 'SOAK':
+                    points.push({rX: 0, rY: 0});
+                    points.push({rX: 0.15, rY: 1.0});
+                    points.push({rX: 0.9, rY: 1.0});
+                    points.push({rX: 1.0, rY: 0});
+                    break;
 
-            case 'VOLUME':
-                points.push({rX: 0, rY: 0});
-                points.push({rX: 0.25, rY: 1.0});
-                points.push({rX: 0.95, rY: 1.0});
-                points.push({rX: 1.0, rY: 0});
-                break;
+                case 'VOLUME':
+                    points.push({rX: 0, rY: 0});
+                    points.push({rX: 0.25, rY: 1.0});
+                    points.push({rX: 0.95, rY: 1.0});
+                    points.push({rX: 1.0, rY: 0});
+                    break;
 
-            case 'SCALABILITY':
-                points.push({rX: 0, rY: 0});
-                points.push({rX: 0.08, rY: 0.25});
-                points.push({rX: 0.23, rY: 0.25});
-                points.push({rX: 0.31, rY: 0.50});
-                points.push({rX: 0.46, rY: 0.50});
-                points.push({rX: 0.54, rY: 0.75});
-                points.push({rX: 0.69, rY: 0.75});
-                points.push({rX: 0.77, rY: 1.0});
-                points.push({rX: 0.95, rY: 1.0});
-                points.push({rX: 1.0, rY: 0});
-                break;
-                
-            default:
-                points.push({rX: 0, rY: 0});
-                points.push({rX: 0.2, rY: 1});
-                points.push({rX: 0.9, rY: 1});
-                points.push({rX: 1.0, rY: 0});
+                case 'SCALABILITY':
+                    points.push({rX: 0, rY: 0});
+                    points.push({rX: 0.08, rY: 0.25});
+                    points.push({rX: 0.23, rY: 0.25});
+                    points.push({rX: 0.31, rY: 0.50});
+                    points.push({rX: 0.46, rY: 0.50});
+                    points.push({rX: 0.54, rY: 0.75});
+                    points.push({rX: 0.69, rY: 0.75});
+                    points.push({rX: 0.77, rY: 1.0});
+                    points.push({rX: 0.95, rY: 1.0});
+                    points.push({rX: 1.0, rY: 0});
+                    break;
+                    
+                default:
+                    points.push({rX: 0, rY: 0});
+                    points.push({rX: 0.2, rY: 1});
+                    points.push({rX: 0.9, rY: 1});
+                    points.push({rX: 1.0, rY: 0});
+            }
         }
 
         ctx.strokeStyle = 'rgba(255, 255, 255, 0.2)';
@@ -2594,6 +2639,7 @@ document.addEventListener('DOMContentLoaded', () => {
             duration_seconds: duration,
             ramp_up_seconds: rampUp,
             pacing_ms: pacing,
+            workload_shape: document.getElementById('wiz-workload-shape')?.value || 'linear',
             slas: Object.keys(slas).length > 0 ? slas : undefined,
             metadata: metadata,
             auth: authObj || undefined,

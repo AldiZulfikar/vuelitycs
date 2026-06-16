@@ -835,6 +835,7 @@ func (s *DashboardServer) handleWizardGenerate(w http.ResponseWriter, r *http.Re
 		DurationSeconds int                        `json:"duration_seconds"`
 		RampUpSeconds   int                        `json:"ramp_up_seconds"`
 		PacingMs        int                        `json:"pacing_ms"`
+		WorkloadShape   string                     `json:"workload_shape"`
 		SLAs            *scenario.SLAConfig        `json:"slas,omitempty"`
 		Metadata        map[string]string          `json:"metadata,omitempty"`
 		Auth            *scenario.AuthConfig       `json:"auth,omitempty"`
@@ -895,6 +896,7 @@ func (s *DashboardServer) handleWizardGenerate(w http.ResponseWriter, r *http.Re
 		RampUpSeconds:   req.RampUpSeconds,
 		PacingMs:        req.PacingMs,
 		TestType:        req.TestType,
+		WorkloadShape:   req.WorkloadShape,
 		Scheduler:       req.TestType + "Scheduler",
 		SLAs:            req.SLAs,
 		Metadata:        req.Metadata,
