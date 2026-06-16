@@ -2132,28 +2132,42 @@ document.addEventListener('DOMContentLoaded', () => {
         }
 
         // Epic 5: Capacity Forecast & Formulas
-        let recCpuRam = "1 CPU / 1 GB RAM";
         let ramFormulaText = "";
         let rpsFormulaText = "";
+        const estMemGB = activeWizProtocol === 'Browser' ? (vus * 400 / 1024) : (vus * 25 / 1024);
+        
+        // Safety margin of 25% to prevent OOM
+        const requiredRAM = estMemGB * 1.25;
+        
+        // Standard RAM size selection
+        let recommendedRAMVal = 1;
+        const standardRAMSizes = [1, 2, 4, 8, 16, 32, 64, 128];
+        for (const size of standardRAMSizes) {
+            if (size >= requiredRAM) {
+                recommendedRAMVal = size;
+                break;
+            }
+            recommendedRAMVal = size;
+        }
+        if (activeWizProtocol === 'Browser' && recommendedRAMVal < 2) {
+            recommendedRAMVal = 2;
+        }
+
+        // Map recommended RAM to appropriate CPU cores
+        let recommendedCPUs = 1;
+        if (recommendedRAMVal === 2) recommendedCPUs = 1;
+        else if (recommendedRAMVal === 4) recommendedCPUs = 2;
+        else if (recommendedRAMVal === 8) recommendedCPUs = 4;
+        else if (recommendedRAMVal === 16) recommendedCPUs = 8;
+        else if (recommendedRAMVal === 32) recommendedCPUs = 16;
+        else if (recommendedRAMVal >= 64) recommendedCPUs = 32;
+
+        const recCpuRam = `${recommendedCPUs} CPU / ${recommendedRAMVal} GB RAM`;
 
         if (activeWizProtocol === 'Browser') {
             ramFormulaText = `${vus} VU * 400 MB = ${(vus * 400).toLocaleString()} MB RAM`;
-            if (vus <= 20) {
-                recCpuRam = "4 CPU / 8 GB RAM";
-            } else {
-                recCpuRam = "8 CPU / 16 GB RAM";
-            }
         } else {
             ramFormulaText = `${vus} VU * 25 MB = ${(vus * 25).toLocaleString()} MB RAM`;
-            if (vus <= 100) {
-                recCpuRam = "1 CPU / 1 GB RAM";
-            } else if (vus <= 500) {
-                recCpuRam = "2 CPU / 2 GB RAM";
-            } else if (vus <= 1000) {
-                recCpuRam = "4 CPU / 8 GB RAM";
-            } else {
-                recCpuRam = "8 CPU / 16 GB RAM";
-            }
         }
 
         const pacingSec = pacing / 1000;
