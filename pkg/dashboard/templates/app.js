@@ -2181,10 +2181,172 @@ document.addEventListener('DOMContentLoaded', () => {
 
         // Render Capacity Forecast explanation inside Pre-Deployment Report
         const forecastDetailEl = document.getElementById('summary-forecast-detail');
+        const multiplier = activeWizProtocol === 'Browser' ? '400 MB' : '25 MB';
+        const ramVal = estMemGB < 1 ? (estMemGB * 1024).toFixed(0) + ' MB' : estMemGB.toFixed(1) + ' GB';
         if (forecastDetailEl) {
-            const multiplier = activeWizProtocol === 'Browser' ? '400 MB' : '25 MB';
-            const ramVal = activeWizProtocol === 'Browser' ? (vus * 400 / 1024).toFixed(1) + ' GB' : (vus * 25 / 1024).toFixed(1) + ' GB';
             forecastDetailEl.innerHTML = `Target VU : ${vus} \nThink Time : ${pacing} ms \nPredicted Peak RPS: ${vus} / ${pacingSec} sec = ${estPeakRPS} RPS \nEngine Recommendation: ${vus} VU × ${multiplier} ≈ ${ramVal} \nRAM Recommended: ${recCpuRam}`;
+        }
+
+        // Update Sprint 3.2.1 Capacity Calculation Breakdown UI
+        const capVuEl = document.getElementById('cap-val-vu');
+        const capPacingEl = document.getElementById('cap-val-pacing');
+        const capMemVuEl = document.getElementById('cap-val-mem-vu');
+        const capFootprintEl = document.getElementById('cap-val-footprint');
+        const capReqRamEl = document.getElementById('cap-val-req-ram');
+        const capConfidenceEl = document.getElementById('cap-val-confidence');
+        const capNetworkBandwidthEl = document.getElementById('cap-val-network-bandwidth');
+        
+        const satCpuEl = document.getElementById('sat-val-cpu');
+        const satRamEl = document.getElementById('sat-val-ram');
+        const satNetworkEl = document.getElementById('sat-val-network');
+        
+        const topologyContainer = document.getElementById('cap-topology-container');
+        const topologyValEl = document.getElementById('cap-val-topology');
+        
+        if (capVuEl) capVuEl.textContent = vus.toLocaleString();
+        if (capPacingEl) capPacingEl.textContent = `${pacing} ms`;
+        if (capMemVuEl) capMemVuEl.textContent = multiplier;
+        if (capFootprintEl) capFootprintEl.textContent = ramVal;
+        
+        const requiredRAMStr = requiredRAM < 1 ? (requiredRAM * 1024).toFixed(0) + ' MB' : requiredRAM.toFixed(1) + ' GB';
+        if (capReqRamEl) capReqRamEl.textContent = requiredRAMStr;
+        
+        // 1. Confidence Score
+        let confidence = "HIGH";
+        let confidenceColor = "#10B981"; // green
+        let confidenceBg = "rgba(16, 185, 129, 0.1)";
+        let confidenceBorder = "1px solid rgba(16, 185, 129, 0.2)";
+        
+        const httpBodyVal = document.getElementById('wiz-http-body')?.value || '';
+        const payloadSizeKB = httpBodyVal.length / 1024;
+        
+        if (activeWizProtocol === 'Browser') {
+            confidence = "LOW";
+            confidenceColor = "#EF4444"; // red
+            confidenceBg = "rgba(239, 68, 68, 0.1)";
+            confidenceBorder = "1px solid rgba(239, 68, 68, 0.2)";
+        } else {
+            const hasCsv = !!uploadedCsvData;
+            if (hasCsv) {
+                const rowCount = uploadedCsvData.rowCount || 0;
+                if (rowCount > 10000) {
+                    confidence = "LOW";
+                    confidenceColor = "#EF4444";
+                    confidenceBg = "rgba(239, 68, 68, 0.1)";
+                    confidenceBorder = "1px solid rgba(239, 68, 68, 0.2)";
+                } else {
+                    confidence = "MEDIUM";
+                    confidenceColor = "#F59E0B"; // amber
+                    confidenceBg = "rgba(245, 158, 11, 0.1)";
+                    confidenceBorder = "1px solid rgba(245, 158, 11, 0.2)";
+                }
+            } else if (payloadSizeKB > 50) {
+                confidence = "LOW";
+                confidenceColor = "#EF4444";
+                confidenceBg = "rgba(239, 68, 68, 0.1)";
+                confidenceBorder = "1px solid rgba(239, 68, 68, 0.2)";
+            } else if (payloadSizeKB > 5) {
+                confidence = "MEDIUM";
+                confidenceColor = "#F59E0B";
+                confidenceBg = "rgba(245, 158, 11, 0.1)";
+                confidenceBorder = "1px solid rgba(245, 158, 11, 0.2)";
+            }
+        }
+        if (capConfidenceEl) {
+            capConfidenceEl.textContent = confidence;
+            capConfidenceEl.style.color = confidenceColor;
+            capConfidenceEl.style.background = confidenceBg;
+            capConfidenceEl.style.border = confidenceBorder;
+        }
+        
+        // 2. Network Footprint Estimation
+        let avgPayloadBytes = 2048; // Default 2 KB
+        if (activeWizProtocol === 'HTTP') {
+            avgPayloadBytes = 1500 + httpBodyVal.length; // Headers approx 1.5 KB
+        } else if (activeWizProtocol === 'Browser') {
+            avgPayloadBytes = 102400; // Browser 100 KB
+        }
+        
+        const bandwidthBytesPerSec = estPeakRPS * avgPayloadBytes;
+        const bandwidthMbps = (bandwidthBytesPerSec * 8) / (1024 * 1024);
+        const bandwidthMBps = bandwidthBytesPerSec / (1024 * 1024);
+        
+        if (capNetworkBandwidthEl) {
+            capNetworkBandwidthEl.textContent = `${bandwidthMBps.toFixed(2)} MB/s (${bandwidthMbps.toFixed(1)} Mbps)`;
+        }
+        
+        // Helper function for saturation levels
+        const getSatStyle = (status) => {
+            if (status === 'RED') {
+                return { color: '#EF4444', bg: 'rgba(239, 68, 68, 0.1)', border: '1px solid rgba(239, 68, 68, 0.2)' };
+            } else if (status === 'YELLOW') {
+                return { color: '#F59E0B', bg: 'rgba(245, 158, 11, 0.1)', border: '1px solid rgba(245, 158, 11, 0.2)' };
+            } else {
+                return { color: '#10B981', bg: 'rgba(16, 185, 129, 0.1)', border: '1px solid rgba(16, 185, 129, 0.2)' };
+            }
+        };
+        
+        // 3. Expected CPU Saturation
+        let cpuSat = 'GREEN';
+        if (activeWizProtocol === 'Browser') {
+            if (vus > 15) cpuSat = 'RED';
+            else if (vus > 5) cpuSat = 'YELLOW';
+        } else {
+            if (vus > 1000) cpuSat = 'RED';
+            else if (vus > 300) cpuSat = 'YELLOW';
+        }
+        if (satCpuEl) {
+            satCpuEl.textContent = cpuSat;
+            const style = getSatStyle(cpuSat);
+            satCpuEl.style.color = style.color;
+            satCpuEl.style.background = style.bg;
+            satCpuEl.style.border = style.border;
+        }
+        
+        // 4. Expected RAM Saturation
+        let ramSat = 'GREEN';
+        const ramRatio = estMemGB / recommendedRAMVal;
+        if (ramRatio >= 0.85) ramSat = 'RED';
+        else if (ramRatio >= 0.6) ramSat = 'YELLOW';
+        
+        if (satRamEl) {
+            satRamEl.textContent = ramSat;
+            const style = getSatStyle(ramSat);
+            satRamEl.style.color = style.color;
+            satRamEl.style.background = style.bg;
+            satRamEl.style.border = style.border;
+        }
+        
+        // 5. Expected Network Saturation
+        let netSat = 'GREEN';
+        if (bandwidthMbps >= 250) netSat = 'RED';
+        else if (bandwidthMbps >= 50) netSat = 'YELLOW';
+        
+        if (satNetworkEl) {
+            satNetworkEl.textContent = netSat;
+            const style = getSatStyle(netSat);
+            satNetworkEl.style.color = style.color;
+            satNetworkEl.style.background = style.bg;
+            satNetworkEl.style.border = style.border;
+        }
+        
+        // 6. Distributed Load Recommendation (Topology)
+        if (vus > 2000) {
+            let numNodes = 1;
+            let vuPerNode = vus;
+            if (activeWizProtocol === 'Browser') {
+                numNodes = Math.ceil(vus / 20);
+                vuPerNode = Math.ceil(vus / numNodes);
+            } else {
+                numNodes = Math.ceil(vus / 1250);
+                vuPerNode = Math.ceil(vus / numNodes);
+            }
+            if (topologyContainer) topologyContainer.classList.remove('hide');
+            if (topologyValEl) {
+                topologyValEl.innerHTML = `Recommended Topology:\n• 1 Central Controller Node\n• ${numNodes} Load Generator Node(s) (${vuPerNode.toLocaleString()} VU per Node)`;
+            }
+        } else {
+            if (topologyContainer) topologyContainer.classList.add('hide');
         }
 
         // Epic 7: Suggested Templates List

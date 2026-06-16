@@ -1091,12 +1091,70 @@
                                         Configure workload to see projections.
                                     </p>
                                     
-                                    <!-- Epic 3: Workload Recommendation Panel -->
-                                    <div style="background: rgba(0,0,0,0.2); border: 1px solid rgba(255,255,255,0.08); border-radius: 6px; padding: 0.75rem;">
-                                        <h4 style="font-size: 0.85rem; margin: 0 0 0.5rem 0; color: #38BDF8; font-weight: 600;">Execution Recommendation</h4>
-                                        <div style="display: flex; flex-direction: column; gap: 0.4rem; font-size: 0.8rem; color: var(--text-muted);">
-                                            <div>Recommended Engine Capacity: <span id="rec-engine-capacity" style="color: var(--text-main); font-weight: bold;">2 CPU / 2 GB RAM</span></div>
-                                            <div>Expected Peak RPS: <span id="rec-peak-rps" style="color: var(--text-main); font-weight: bold;">~0 req/sec</span></div>
+                                    <!-- Epic 3/Sprint 3.2.1: Capacity Intelligence Panel -->
+                                    <div style="background: rgba(15, 23, 42, 0.4); border: 1px solid rgba(255,255,255,0.08); border-radius: 8px; padding: 1rem; margin-top: 1rem;">
+                                        <h4 style="font-size: 0.9rem; margin: 0 0 0.75rem 0; color: #38BDF8; font-weight: 600; display: flex; align-items: center; gap: 0.5rem;">
+                                            <span style="color: #38BDF8;">⚡</span> Capacity Intelligence & Pre-Execution Analysis
+                                        </h4>
+                                        
+                                        <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 1.25rem; align-items: start;">
+                                            <!-- Column 1: Capacity Calculation Breakdown -->
+                                            <div style="background: rgba(0,0,0,0.25); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04);">
+                                                <h5 style="font-size: 0.8rem; margin: 0 0 0.5rem 0; color: #C084FC; font-weight: 600;">Capacity Calculation Breakdown</h5>
+                                                <div style="display: grid; grid-template-columns: 1.5fr 1fr; gap: 0.35rem; font-size: 0.75rem; color: var(--text-muted); line-height: 1.4;">
+                                                    <div>Target VU:</div><div id="cap-val-vu" style="color: var(--text-main); font-weight: bold; text-align: right;">-</div>
+                                                    <div>Pacing:</div><div id="cap-val-pacing" style="color: var(--text-main); font-weight: bold; text-align: right;">-</div>
+                                                    <div>Predicted Peak RPS:</div><div id="rec-peak-rps" style="color: #34D399; font-weight: bold; text-align: right;">-</div>
+                                                    <div>Memory Per VU:</div><div id="cap-val-mem-vu" style="color: var(--text-main); text-align: right;">-</div>
+                                                    <div>Engine Footprint:</div><div id="cap-val-footprint" style="color: var(--text-main); font-weight: bold; text-align: right;">-</div>
+                                                    <div>Safety Buffer:</div><div id="cap-val-buffer" style="color: #F59E0B; text-align: right;">25%</div>
+                                                    <div>Required RAM:</div><div id="cap-val-req-ram" style="color: var(--text-main); font-weight: bold; text-align: right;">-</div>
+                                                    <div style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.25rem; margin-top: 0.25rem; font-weight: 600; color: var(--text-main);">Recommended Spec:</div>
+                                                    <div id="rec-engine-capacity" style="border-top: 1px solid rgba(255,255,255,0.08); padding-top: 0.25rem; margin-top: 0.25rem; color: #38BDF8; font-weight: bold; text-align: right;">-</div>
+                                                </div>
+                                            </div>
+                                            
+                                            <!-- Column 2: Performance Advisor Insights -->
+                                            <div style="display: flex; flex-direction: column; gap: 0.75rem;">
+                                                <!-- Confidence & Network -->
+                                                <div style="background: rgba(0,0,0,0.25); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04);">
+                                                    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+                                                        <span style="font-size: 0.75rem; color: var(--text-muted);">Confidence Indicator:</span>
+                                                        <span id="cap-val-confidence" class="badge" style="font-size: 0.7rem; font-weight: bold; padding: 0.15rem 0.4rem;">-</span>
+                                                    </div>
+                                                    <div style="display: flex; justify-content: space-between; align-items: center;">
+                                                        <span style="font-size: 0.75rem; color: var(--text-muted);">Network Footprint:</span>
+                                                        <span id="cap-val-network-bandwidth" style="font-size: 0.75rem; color: var(--text-main); font-weight: bold;">-</span>
+                                                    </div>
+                                                </div>
+                                                
+                                                <!-- Saturation Forecast -->
+                                                <div style="background: rgba(0,0,0,0.25); padding: 0.75rem; border-radius: 6px; border: 1px solid rgba(255,255,255,0.04);">
+                                                    <h5 style="font-size: 0.75rem; margin: 0 0 0.4rem 0; color: var(--text-muted); font-weight: 600;">Generator Saturation Forecast</h5>
+                                                    <div style="display: flex; gap: 0.5rem; justify-content: space-between;">
+                                                        <div style="flex: 1; text-align: center; background: rgba(0,0,0,0.2); padding: 0.25rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+                                                            <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.15rem;">CPU Load</div>
+                                                            <span id="sat-val-cpu" class="badge" style="font-size: 0.65rem; display: inline-block; padding: 0.1rem 0.35rem; font-weight: bold; border-radius: 3px;">-</span>
+                                                        </div>
+                                                        <div style="flex: 1; text-align: center; background: rgba(0,0,0,0.2); padding: 0.25rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+                                                            <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.15rem;">RAM Load</div>
+                                                            <span id="sat-val-ram" class="badge" style="font-size: 0.65rem; display: inline-block; padding: 0.1rem 0.35rem; font-weight: bold; border-radius: 3px;">-</span>
+                                                        </div>
+                                                        <div style="flex: 1; text-align: center; background: rgba(0,0,0,0.2); padding: 0.25rem; border-radius: 4px; border: 1px solid rgba(255,255,255,0.05);">
+                                                            <div style="font-size: 0.65rem; color: var(--text-muted); margin-bottom: 0.15rem;">Network</div>
+                                                            <span id="sat-val-network" class="badge" style="font-size: 0.65rem; display: inline-block; padding: 0.1rem 0.35rem; font-weight: bold; border-radius: 3px;">-</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        </div>
+                                        
+                                        <!-- Topology Recommendation Section (Visible if > 2000 VU) -->
+                                        <div id="cap-topology-container" class="hide" style="margin-top: 0.75rem; background: rgba(56, 189, 248, 0.08); border: 1px solid rgba(56, 189, 248, 0.25); border-radius: 6px; padding: 0.6rem 0.8rem;">
+                                            <div style="font-size: 0.75rem; color: #38BDF8; font-weight: bold; display: flex; align-items: center; gap: 0.35rem;">
+                                                <span>🌐</span> Recommended Topology (Distributed Load)
+                                            </div>
+                                            <div id="cap-val-topology" style="font-size: 0.75rem; color: var(--text-main); margin-top: 0.25rem; line-height: 1.4; font-family: monospace; white-space: pre-wrap;">-</div>
                                         </div>
                                     </div>
                                 </div>
